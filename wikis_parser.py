@@ -25,6 +25,11 @@ if __name__ == '__main__':
     for match in col_name_links:
         match.decompose()
 
-    links = table.find_all('a', href=True)
+
+    links = []
+    for elem in table.find_all('a', href=True):
+        if elem.text:
+            links.append('https:' + elem['href'])
+
 
     print('Ok')
