@@ -29,9 +29,11 @@ if __name__ == '__main__':
     page = requests.get(WIKIMEDIA_WIKIS_PAGE)
     soup = BeautifulSoup(page.content, 'html.parser')
 
-    main_table = soup.find('table', attrs={'id': 'mw-sitematrix-table'})    # get first wikitable
+    main_table = soup.find('table', attrs={'id': 'mw-sitematrix-table'})        # get first wikitable
     main_table_links = parse_table(main_table)
 
+    add_table = soup.find('table', attrs={'id': 'mw-sitematrix-other-table'})    # other wikimedia projects table
+    add_table_links = parse_table(add_table)
 
 
 
