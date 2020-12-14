@@ -33,15 +33,26 @@ def save_links_to_txt(links):
 
 
 if __name__ == '__main__':
-    page = requests.get(WIKIMEDIA_WIKIS_PAGE)
-    soup = BeautifulSoup(page.content, 'html.parser')
+    try:
+        page = requests.get(WIKIMEDIA_WIKIS_PAGE)
+        page.raise_for_status()                         # so it will raise exception, if status code is not OK
+        soup = BeautifulSoup(page.content, 'html.parser')
 
-    main_table = soup.find('table', attrs={'id': 'mw-sitematrix-table'})        # get first wikitable
-    main_table_links = parse_table(main_table)
+        main_table = soup.find('table', attrs={'id': 'mw-sitematrix-table'})        # get first wikitable
+        main_table_links = parse_table(main_table)
 
-    add_table = soup.find('table', attrs={'id': 'mw-sitematrix-other-table'})    # other wikimedia projects table
-    add_table_links = parse_table(add_table)
+        add_table = soup.find('table', attrs={'id': 'mw-sitematrix-other-table'})    # other wikimedia projects table
+        add_table_links = parse_table(add_table)
 
-    save_links_to_txt(main_table_links + add_table_links)
+        save_links_to_txt(main_table_links + add_table_links)
 
-    print('Ok')
+        print('Ok')
+
+    except requests.exceptions.ConnectionError:
+        print('Network error')
+        exit(1)
+    except requests.exceptions.Timeout:
+        print('Page timeout, try again later')
+        exit(1)
+    except requests.exceptions.RequestException as err:
+        raise SystemExit(err)
