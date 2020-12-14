@@ -15,7 +15,16 @@ if __name__ == '__main__':
     for match in deleted_links:
         match.decompose()
 
-    links = table.find_all('a', href=True)
+    # removes all the links to wikis, which don't exist (red link)
+    nonexisting_links = table.find_all('a', attrs={'class': 'new'})
+    for match in nonexisting_links:
+        match.decompose()
 
+    # removes links to "main hubs" for each type of wiki, they are in headers
+    col_name_links = table.find_all('th')
+    for match in col_name_links:
+        match.decompose()
+
+    links = table.find_all('a', href=True)
 
     print('Ok')
