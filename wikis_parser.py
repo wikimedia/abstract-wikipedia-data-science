@@ -5,6 +5,16 @@ WIKIMEDIA_WIKIS_PAGE = 'https://meta.wikimedia.org/wiki/Special:SiteMatrix'
 
 if __name__ == '__main__':
     page = requests.get(WIKIMEDIA_WIKIS_PAGE)
-    soup = BeautifulSoup(page.text, 'html.parser')
+    soup = BeautifulSoup(page.content, 'html.parser')
+
+    links = []
+    table = soup.find('table', attrs={'id': 'mw-sitematrix-table'})
+
+    deleted_links = table.find_all('del')
+    for match in deleted_links:
+        match.decompose()
+
+    links = table.find_all('a', href=True)
+
 
     print('Ok')
