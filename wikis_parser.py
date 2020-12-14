@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import requests
 
 WIKIMEDIA_WIKIS_PAGE = 'https://meta.wikimedia.org/wiki/Special:SiteMatrix'
+TEXT_FILENAME = 'wikipages.txt'
 
 
 def parse_table(table):
@@ -25,6 +26,12 @@ def parse_table(table):
     return links
 
 
+def save_links_to_txt(links):
+    with open(TEXT_FILENAME, 'w') as textfile:
+        for link in links:
+            textfile.write(link + '\n')
+
+
 if __name__ == '__main__':
     page = requests.get(WIKIMEDIA_WIKIS_PAGE)
     soup = BeautifulSoup(page.content, 'html.parser')
@@ -35,6 +42,6 @@ if __name__ == '__main__':
     add_table = soup.find('table', attrs={'id': 'mw-sitematrix-other-table'})    # other wikimedia projects table
     add_table_links = parse_table(add_table)
 
-
+    save_links_to_txt(main_table_links + add_table_links)
 
     print('Ok')
