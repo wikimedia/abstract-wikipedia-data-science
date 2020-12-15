@@ -1,1 +1,3 @@
 toolforge
+mwapi
+pandas
