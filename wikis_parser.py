@@ -1,9 +1,5 @@
-from bs4 import BeautifulSoup
-import requests
 import toolforge
 
-WIKIMEDIA_WIKIS_PAGE = 'https://meta.wikimedia.org/wiki/Special:SiteMatrix'
-TEXT_FILENAME = 'wikipages.txt'
 CSV_FILENAME = 'wikipages.csv'
 
 
@@ -16,7 +12,7 @@ def get_wikipages_from_db():
     conn = toolforge.connect('meta')
     with conn.cursor() as cur:
         cur.execute(query)
-        print(cur.fetchall())
+        return cur.fetchall()
 
 
 def save_links_to_csv(entries):
@@ -26,11 +22,6 @@ def save_links_to_csv(entries):
             file.write(entry[0] + ',' + entry[1] + '\n')
 
 
-def save_links_to_txt(links):
-    with open(TEXT_FILENAME, 'w') as textfile:
-        for link in links:
-            textfile.write(link + '\n')
-
-
 if __name__ == '__main__':
-    get_wikipages_from_db()
+    db_info = get_wikipages_from_db()
+    save_links_to_csv(db_info)
