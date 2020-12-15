@@ -6,10 +6,7 @@ import pandas as pd
 
 ## define constants
 MIN_IDX = 0
-MAX_IDX = 8 ## UPDATE WITH REAL VALUE
-NAMESPACES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 
-    90, 91, 92, 93, 100, 101, 102, 103, 104, 105, 106, 107, 486, 487, 
-    828, 829, 1198, 1199, 2300, 2301, 2302, 2303, 2600, 5500, 5501]
+MAX_IDX = 826 # 827 total links
 
 def get_wiki_list(filename, start_idx, end_idx):
     ## List the wikis in the rage [start_idx, end_idx] and run function
@@ -22,83 +19,80 @@ def get_wiki_list(filename, start_idx, end_idx):
                 break
     return wikis
 
-def save_content(wiki, ns, data_list, missed):
+def save_content(wiki, data_list, missed):
     data_df = pd.DataFrame(data_list, columns=['id', 'title', 'url', 'length', 'content', 'format', 'model', 'touched'])
     data_df['wiki'] = wiki
-    data_df['ns'] = ns
     data_df.to_csv('wiki_contents.csv', mode='a', header=False, index=False)
 
     missed_df = pd.DataFrame(missed, columns=['title', 'pageid'])
     missed_df['wiki'] = wiki
-    missed_df['ns'] = ns
     missed_df.to_csv('missed_wiki_contents.csv', mode='a', header=False, index=False)
 
 def get_contents(wikis):
-    user_agent = toolforge.set_user_agent('test-tool-aisha')
+    user_agent = toolforge.set_user_agent('ab-wiki-ds')
     for wiki in wikis:
         session = mwapi.Session(wiki, user_agent=user_agent)
-        for ns in NAMESPACES:
-            data_list = []
-            missed = []
-            _gapcontinue = ''
-            _continue = ''
+        data_list = []
+        missed = []
+        _gapcontinue = ''
+        _continue = ''
 
-            while True:
-                params = {'action':'query',
-                        'generator':'allpages',
-                        'gapnamespace':ns,
-                        'gaplimit':'max',
-                        'format':'json',
-                        'prop':'info',
-                        'inprop':'url',
-                        'gapcontinue': _gapcontinue,
-                        'continue': _continue,
-                        }
-                
-                result = session.get(params)
+        while True:
+            params = {'action':'query',
+                    'generator':'allpages',
+                    'gapnamespace':'828',
+                    'gaplimit':'max',
+                    'format':'json',
+                    'prop':'info',
+                    'inprop':'url',
+                    'gapcontinue': _gapcontinue,
+                    'continue': _continue,
+                    }
+            
+            result = session.get(params)
 
-                for page in list(result['query']['pages'].values()):
-                    try:
-                        pageid = page['pageid']
-                        title = page['title']
-                        touched = page['touched']
-                        length = page['length']
-                        url = page['fullurl']
-                        revid = page['lastrevid']
-                        
-                        params = {'action':'query',
-                                'format':'json',
-                                'prop':'revisions',
-                                'revids':revid,
-                                'rvprop':'content',
-                                'rvslots':'main',
-                                'formatversion':2
-                                }
-                
-                        rev_result = session.get(params)
-
-                        content_info = rev_result['query']['pages'][0]['revisions'][0]['slots']['main']
-                        content = content_info['content']
-                        content_model = content_info['contentmodel']
-                        content_format = content_info['contentformat']
-                        
-                        data_list.append([pageid, title, url, length, content, content_format, content_model, touched])
-                    except:
-                        if ('title' in page.keys()) and ('pageid' in page.keys()):
-                            missed.append([page['title'], page['pageid']])
+            for page in list(result['query']['pages'].values()):
                 try:
-                    _continue = result['continue']['continue']
-                    _gapcontinue = result['continue']['gapcontinue'] \
-                        if 'gapcontinue' in  result['continue'] else ''
+                    pageid = page['pageid']
+                    title = page['title']
+                    touched = page['touched']
+                    length = page['length']
+                    url = page['fullurl']
+                    revid = page['lastrevid']
+                    
+                    params = {'action':'query',
+                            'format':'json',
+                            'prop':'revisions',
+                            'revids':revid,
+                            'rvprop':'content',
+                            'rvslots':'main',
+                            'formatversion':2
+                            }
+            
+                    rev_result = session.get(params)
+
+                    content_info = rev_result['query']['pages'][0]['revisions'][0]['slots']['main']
+                    content = content_info['content']
+                    content_model = content_info['contentmodel']
+                    content_format = content_info['contentformat']
+                    
+                    if(content_model=='Scribunto'):
+                        data_list.append([pageid, title, url, length, content, content_format, content_model, touched])
                 except:
-                    break
-                
-                # print(len(data_list), 'pages loaded...')
+                    if ('title' in page.keys()) and ('pageid' in page.keys()):
+                        missed.append([page['title'], page['pageid']])
+            try:
+                _continue = result['continue']['continue']
+                _gapcontinue = result['continue']['gapcontinue'] if 'gapcontinue' in  result['continue'] else ''
+            except:
+                break
+            
+            print(len(data_list), 'pages loaded...')
 
-            print("All pages loaded for %s in namespace %d. Missed: %d, Loaded: %d" \
-                %(wiki, ns, len(missed), len(data_list)))
+        print("All pages loaded for %s. Missed: %d, Loaded: %d" \
+            %(wiki, len(missed), len(data_list)))
 
-            save_content(wiki, ns, data_list, missed)
+        save_content(wiki, data_list, missed)
     
     print("Done loading!")
 
