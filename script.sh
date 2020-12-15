@@ -5,7 +5,7 @@
 source venv/bin/activate
 
 # arguments are the start and end indices of links to run from wiki_list.txt file
-python3 pyscript.py $1 $2
+python3 fetch_content.py $1 $2
 
 # How to run this file:
 # run: crontab -e
