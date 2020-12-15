@@ -4,6 +4,7 @@ import toolforge
 
 WIKIMEDIA_WIKIS_PAGE = 'https://meta.wikimedia.org/wiki/Special:SiteMatrix'
 TEXT_FILENAME = 'wikipages.txt'
+CSV_FILENAME = 'wikipages.csv'
 
 
 def get_wikipages_from_db():
@@ -18,26 +19,11 @@ def get_wikipages_from_db():
         print(cur.fetchall())
 
 
-
-def parse_table(table):
-    # all the crossed out wikis
-    deleted_links = table.find_all('del')
-
-    # all the links to wikis, which don't exist (red link)
-    nonexisting_links = table.find_all('a', attrs={'class': 'new'})
-
-    # links to "main hubs" for each type of wiki, they are in headers
-    col_name_links = table.find_all('th')
-
-    for match in deleted_links + nonexisting_links + col_name_links:
-        match.decompose()
-
-    links = []
-    for elem in table.find_all('a', href=True):
-        if elem.text:
-            links.append('https:' + elem['href'])
-
-    return links
+def save_links_to_csv(entries):
+    with open(CSV_FILENAME, 'w') as file:
+        file.write('dbname, url\n')
+        for entry in entries:
+            file.write(entry[0] + ',' + entry[1] + '\n')
 
 
 def save_links_to_txt(links):
