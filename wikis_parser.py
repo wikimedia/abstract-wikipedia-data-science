@@ -1,8 +1,34 @@
 from bs4 import BeautifulSoup
 import requests
+import mwapi
+import toolforge
+
 
 WIKIMEDIA_WIKIS_PAGE = 'https://meta.wikimedia.org/wiki/Special:SiteMatrix'
 TEXT_FILENAME = 'wikipages.txt'
+USER_INFO = 'LostEnchanter'
+SITENAME = 'https://meta.wikimedia.org/'
+
+
+def get_tables_from_db():
+    query = """
+        select
+        site_global_key as db_name,
+        site_group as project,
+        site_language as language,
+        concat("https://", trim(leading "." from reverse(site_domain))) as domain
+        from enwiki.sites
+        where site_group in (
+        'betawikiversity', 'commons', 'incubator', 'labs', 'mediawiki', 'meta', 'outreach',
+        'sources', 'species', 'wikibooks', 'wikidata', 'wikinews', 'wikipedia', 'wikiquote',
+        'wikisource', 'wikiversity', 'wikivoyage', 'wiktionary'
+)
+    """
+    conn = toolforge.connect('meta')  # You can also use "enwiki_p"
+    # conn is a pymysql.connection object.
+    with conn.cursor() as cur:
+        cur.execute(query)
+
 
 
 def parse_table(table):
@@ -33,6 +59,8 @@ def save_links_to_txt(links):
 
 
 if __name__ == '__main__':
+    get_tables_from_db()
+    """
     try:
         page = requests.get(WIKIMEDIA_WIKIS_PAGE)
         page.raise_for_status()                         # so it will raise exception, if status code is not OK
@@ -56,3 +84,4 @@ if __name__ == '__main__':
         exit(1)
     except requests.exceptions.RequestException as err:
         raise SystemExit(err)
+        """
