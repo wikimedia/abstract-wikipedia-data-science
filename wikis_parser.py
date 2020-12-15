@@ -1,8 +1,22 @@
 from bs4 import BeautifulSoup
 import requests
+import toolforge
 
 WIKIMEDIA_WIKIS_PAGE = 'https://meta.wikimedia.org/wiki/Special:SiteMatrix'
 TEXT_FILENAME = 'wikipages.txt'
+
+
+def get_wikipages_from_db():
+    query = ("\n"
+             "    select dbname, url\n"
+             "    from wiki\n"
+             "    where is_closed = 0")
+
+    conn = toolforge.connect('meta')
+    with conn.cursor() as cur:
+        cur.execute(query)
+        print(cur.fetchall())
+
 
 
 def parse_table(table):
@@ -33,26 +47,4 @@ def save_links_to_txt(links):
 
 
 if __name__ == '__main__':
-    try:
-        page = requests.get(WIKIMEDIA_WIKIS_PAGE)
-        page.raise_for_status()                         # so it will raise exception, if status code is not OK
-        soup = BeautifulSoup(page.content, 'html.parser')
-
-        main_table = soup.find('table', attrs={'id': 'mw-sitematrix-table'})        # get first wikitable
-        main_table_links = parse_table(main_table)
-
-        add_table = soup.find('table', attrs={'id': 'mw-sitematrix-other-table'})    # other wikimedia projects table
-        add_table_links = parse_table(add_table)
-
-        save_links_to_txt(main_table_links + add_table_links)
-
-        print('Ok')
-
-    except requests.exceptions.ConnectionError:
-        print('Network error')
-        exit(1)
-    except requests.exceptions.Timeout:
-        print('Page timeout, try again later')
-        exit(1)
-    except requests.exceptions.RequestException as err:
-        raise SystemExit(err)
+    get_wikipages_from_db()
