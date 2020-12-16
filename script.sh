@@ -1,11 +1,18 @@
 # Create a python environment with the following commands
-# python3 -mvenv venv
+# activate it and install dependencies
+
+# python3 -mvenv my_venv
+# source my_venv/bin/activate
 # pip install -r requirements.txt
 
-source venv/bin/activate
+## ---- code to run in cronjob ----
 
-# arguments are the start and end indices of links to run from wiki_list.txt file
+source my_venv/bin/activate
+
+# arguments are the start and end indices of links to run from wikipages.csv file
 python3 fetch_content.py $1 $2
+
+## --------------------------------
 
 # How to run this file:
 # run: crontab -e

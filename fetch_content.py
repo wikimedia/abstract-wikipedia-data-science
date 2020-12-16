@@ -6,18 +6,12 @@ import pandas as pd
 
 ## define constants
 MIN_IDX = 0
-MAX_IDX = 826 # 827 total links
 
 def get_wiki_list(filename, start_idx, end_idx):
     ## List the wikis in the rage [start_idx, end_idx] and run function
-    wikis = []
-    with open(filename) as file:
-        for i, line in enumerate(file):
-            if i>=start_idx:
-                wikis.append(line.strip(' \n'))
-            if i==end_idx:
-                break
-    return wikis
+    df = pd.read_csv(filename)
+    wikis = df['url'].values
+    return wikis[start_idx:end_idx+1]
 
 def save_content(wiki, data_list, missed):
     data_df = pd.DataFrame(data_list, columns=['id', 'title', 'url', 'length', 'content', 'format', 'model', 'touched'])
@@ -29,7 +23,7 @@ def save_content(wiki, data_list, missed):
     missed_df.to_csv('missed_wiki_contents.csv', mode='a', header=False, index=False)
 
 def get_contents(wikis):
-    user_agent = toolforge.set_user_agent('ab-wiki-ds')
+    user_agent = toolforge.set_user_agent('abstract-wiki-ds')
     for wiki in wikis:
         session = mwapi.Session(wiki, user_agent=user_agent)
         data_list = []
@@ -40,7 +34,7 @@ def get_contents(wikis):
         while True:
             params = {'action':'query',
                     'generator':'allpages',
-                    'gapnamespace':'828',
+                    'gapnamespace':828,
                     'gaplimit':'max',
                     'format':'json',
                     'prop':'info',
@@ -76,7 +70,7 @@ def get_contents(wikis):
                     content_model = content_info['contentmodel']
                     content_format = content_info['contentformat']
                     
-                    if(content_model=='Scribunto'):
+                    if content_model=='Scribunto':
                         data_list.append([pageid, title, url, length, content, content_format, content_model, touched])
                 except:
                     if ('title' in page.keys()) and ('pageid' in page.keys()):
@@ -110,14 +104,14 @@ if __name__ == "__main__":
         print("Error: Both indices should be integer.")
         sys.exit()
     
-    if start_idx<MIN_IDX or end_idx<MIN_IDX or start_idx>MAX_IDX or end_idx>MAX_IDX:
-        print("Error: Both indices should be in the range %d to %d." %(MIN_IDX, MAX_IDX))
+    if start_idx<MIN_IDX or end_idx<MIN_IDX:
+        print("Error: Indices should be %d or more" %MIN_IDX)
         sys.exit()
 
     if start_idx>end_idx:
         print("Error: ending index must be greater than start index.")
         sys.exit()
     
-    wikis = get_wiki_list('wikipages.txt', start_idx, end_idx)
+    wikis = get_wiki_list('wikipages.csv', start_idx, end_idx)
     get_contents(wikis)
     
