@@ -1,1 +1,4 @@
-toolforge~=4.3.2
+toolforge
+mwapi
+pandas
+
