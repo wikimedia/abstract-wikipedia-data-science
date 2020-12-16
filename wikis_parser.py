@@ -17,7 +17,7 @@ def get_wikipages_from_db():
 
 def save_links_to_csv(entries):
     with open(CSV_FILENAME, 'w') as file:
-        file.write('dbname, url\n')
+        file.write('dbname,url\n')
         for entry in entries:
             file.write(entry[0] + ',' + entry[1] + '\n')
 
