@@ -1,0 +1,10 @@
+## Add these to the end of crontab -e
+
+30 15 * * * jsub -N cron-1 abstract-wikipedia-data-science/script.sh 0 100
+30 15 * * * jsub -N cron-2 abstract-wikipedia-data-science/script.sh 101 200
+30 15 * * * jsub -N cron-3 abstract-wikipedia-data-science/script.sh 201 300
+30 15 * * * jsub -N cron-4 abstract-wikipedia-data-science/script.sh 301 400
+30 15 * * * jsub -N cron-5 abstract-wikipedia-data-science/script.sh 401 500
+30 15 * * * jsub -N cron-6 abstract-wikipedia-data-science/script.sh 501 600
+30 15 * * * jsub -N cron-7 abstract-wikipedia-data-science/script.sh 601 700
+30 15 * * * jsub -N cron-8 abstract-wikipedia-data-science/script.sh 701 800

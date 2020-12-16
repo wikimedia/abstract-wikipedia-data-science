@@ -5,13 +5,14 @@
 # source my_venv/bin/activate
 # pip install -r requirements.txt
 
+# Make script executable
+# chmod +x script.sh
+
 ## ---- code to run in cronjob ----
-
+cd abstract-wikipedia-data-science/
 source my_venv/bin/activate
-
-# arguments are the start and end indices of links to run from wikipages.csv file
 python3 fetch_content.py $1 $2
-
+# arguments are the start and end indices of links to run from wikipages.csv file
 ## --------------------------------
 
 # How to run this file:

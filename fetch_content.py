@@ -105,11 +105,11 @@ if __name__ == "__main__":
         sys.exit()
     
     if start_idx<MIN_IDX or end_idx<MIN_IDX:
-        print("Error: Indices should be %d or more" %MIN_IDX)
+        print("Error: Indices should be %d or more." %MIN_IDX)
         sys.exit()
 
     if start_idx>end_idx:
-        print("Error: ending index must be greater than start index.")
+        print("Error: Ending index must be greater than start index.")
         sys.exit()
     
     wikis = get_wiki_list('wikipages.csv', start_idx, end_idx)
