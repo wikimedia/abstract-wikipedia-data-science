@@ -44,6 +44,9 @@ def get_contents(wikis):
                     }
             
             result = session.get(params)
+            
+            if 'query' not in result.keys():
+                continue
 
             for page in list(result['query']['pages'].values()):
                 try:
