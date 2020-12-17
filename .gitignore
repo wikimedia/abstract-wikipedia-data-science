@@ -1,5 +1,6 @@
 # File with all Wikimedia links
 wikipages.txt
+wikipages.csv
 
 # COMMON PYTHOM GITIGNORE
 # Byte-compiled / optimized / DLL files
