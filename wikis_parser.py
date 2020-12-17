@@ -36,10 +36,12 @@ def get_creation_date_from_db():
 
 
 def save_links_to_csv(entries):
-    with open(CSV_LINKS, 'w') as file:
-        file.write('dbname,url\n')
-        for entry in entries:
-            file.write(entry[0] + ',' + entry[1] + '\n')
+    entries_df = pd.DataFrame(entries, columns=['dbname', 'url'])
+    entries_df.to_csv(CSV_LINKS, mode='w', header=True, index=False)
+    #with open(CSV_LINKS, 'w') as file:
+    #    file.write('dbname,url\n')
+    #    for entry in entries:
+    #        file.write(entry[0] + ',' + entry[1] + '\n')
 
 
 def get_last_update_local():
