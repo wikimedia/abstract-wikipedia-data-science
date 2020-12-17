@@ -25,7 +25,7 @@ def get_creation_date_from_db():
     conn = toolforge.connect('meta')
     with conn.cursor() as cur:
         cur.execute(query)
-        print(cur.fetch())
+        print(cur.fetchone())
 
 
 def save_links_to_csv(entries):
