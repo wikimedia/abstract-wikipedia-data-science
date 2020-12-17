@@ -55,11 +55,21 @@ def get_last_update_local():
 
 def update_checker():
     wiki_db_update_time = get_creation_date_from_db()
+    local_db_update_time = get_last_update_local()
+    if local_db_update_time is not None:
+        local_db_update_time = pd.to_datetime(local_db_update_time, yearfirst=True)
+        if wiki_db_update_time == local_db_update_time:
+            print('Wikiprojects update checker: update not needed')
+            return
+
+    db_info = get_wikipages_from_db()
+    save_links_to_csv(db_info)
+
+
+
 
 
 
 
 if __name__ == '__main__':
     get_creation_date_from_db()
-    #db_info = get_wikipages_from_db()
-    #save_links_to_csv(db_info)
