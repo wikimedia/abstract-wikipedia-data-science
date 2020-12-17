@@ -57,7 +57,7 @@ def update_local_db(update_time):
         df.loc[df['dbname'] == 'meta', 'update_time'] = update_time
         df.to_csv(CSV_UPDATE_TIME, mode='w', header=True, index=False)
     else:
-        update_time_df = pd.DataFrame(['meta', update_time], columns=['dbname', 'update_time'])
+        update_time_df = pd.DataFrame([['meta', update_time]], columns=['dbname', 'update_time'])
         update_time_df.to_csv(CSV_UPDATE_TIME, mode='a', header=True, index=False)
 
 
