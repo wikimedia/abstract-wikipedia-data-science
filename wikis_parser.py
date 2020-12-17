@@ -15,7 +15,6 @@ def get_wikipages_from_db():
 
     conn = toolforge.connect('meta')
     with conn.cursor() as cur:
-        print(cur.fetchone())
         cur.execute(query)
         return cur.fetchall()
 
