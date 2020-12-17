@@ -82,4 +82,4 @@ def update_checker():
 
 
 if __name__ == '__main__':
-    get_creation_date_from_db()
+    update_checker()
