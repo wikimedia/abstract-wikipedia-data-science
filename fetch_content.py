@@ -45,39 +45,37 @@ def get_contents(wikis):
             
             result = session.get(params)
             
-            if 'query' not in result.keys():
-                continue
+            if 'query' in result.keys():
+                for page in list(result['query']['pages'].values()):
+                    try:
+                        pageid = page['pageid']
+                        title = page['title']
+                        touched = page['touched']
+                        length = page['length']
+                        url = page['fullurl']
+                        revid = page['lastrevid']
+                        
+                        params = {'action':'query',
+                                'format':'json',
+                                'prop':'revisions',
+                                'revids':revid,
+                                'rvprop':'content',
+                                'rvslots':'main',
+                                'formatversion':2
+                                }
+                
+                        rev_result = session.get(params)
 
-            for page in list(result['query']['pages'].values()):
-                try:
-                    pageid = page['pageid']
-                    title = page['title']
-                    touched = page['touched']
-                    length = page['length']
-                    url = page['fullurl']
-                    revid = page['lastrevid']
-                    
-                    params = {'action':'query',
-                            'format':'json',
-                            'prop':'revisions',
-                            'revids':revid,
-                            'rvprop':'content',
-                            'rvslots':'main',
-                            'formatversion':2
-                            }
-            
-                    rev_result = session.get(params)
-
-                    content_info = rev_result['query']['pages'][0]['revisions'][0]['slots']['main']
-                    content = content_info['content']
-                    content_model = content_info['contentmodel']
-                    content_format = content_info['contentformat']
-                    
-                    if content_model=='Scribunto':
-                        data_list.append([pageid, title, url, length, content, content_format, content_model, touched])
-                except:
-                    if ('title' in page.keys()) and ('pageid' in page.keys()):
-                        missed.append([page['title'], page['pageid']])
+                        content_info = rev_result['query']['pages'][0]['revisions'][0]['slots']['main']
+                        content = content_info['content']
+                        content_model = content_info['contentmodel']
+                        content_format = content_info['contentformat']
+                        
+                        if content_model=='Scribunto':
+                            data_list.append([pageid, title, url, length, content, content_format, content_model, touched])
+                    except:
+                        if ('title' in page.keys()) and ('pageid' in page.keys()):
+                            missed.append([page['title'], page['pageid']])
             try:
                 _continue = result['continue']['continue']
                 _gapcontinue = result['continue']['gapcontinue'] if 'gapcontinue' in  result['continue'] else ''
