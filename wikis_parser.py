@@ -64,7 +64,9 @@ def update_local_db(update_time):
 
 def update_checker():
     wiki_db_update_time = get_creation_date_from_db()
+    print('Wikiprojects update checker: time of last update fetched from database')
     local_db_update_time = get_last_update_local()
+    print('Wikiprojects update checker: local time of last update fetched')
     if local_db_update_time is not None:
         local_db_update_time = pd.to_datetime(local_db_update_time, yearfirst=True)
         if wiki_db_update_time == local_db_update_time:
@@ -72,13 +74,11 @@ def update_checker():
             return
 
     db_info = get_wikipages_from_db()
+    print('Wikiprojects update checker: wikilinks info fetched from db')
     save_links_to_csv(db_info)
+    print('Wikiprojects update checker: wikipages links updated')
     update_local_db(wiki_db_update_time)
-
-
-
-
-
+    print('Wikiprojects update checker: update finished')
 
 
 if __name__ == '__main__':
