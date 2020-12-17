@@ -47,7 +47,7 @@ def get_last_update_local():
         return None
     else:
         with open(CSV_UPDATE_TIME, "w") as file:
-            file.write('dbname,update_time')
+            file.write('dbname,update_time\n')
         return None
 
 
