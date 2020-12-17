@@ -42,7 +42,7 @@ def get_last_update_local():
     if os.path.exists(CSV_UPDATE_TIME):
         df = pd.read_csv(CSV_UPDATE_TIME)
         if 'meta' in df.values:
-            update_time = df.loc[df['dbname'] == 'meta', 'update_time'].item()
+            update_time = df.loc[df['dbname'] == 'meta', 'update_time'].iloc[0]
             return update_time
         return None
     else:
