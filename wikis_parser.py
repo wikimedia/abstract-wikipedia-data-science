@@ -1,5 +1,5 @@
 import toolforge
-import datetime
+import pymysql.err
 import pandas as pd
 import os.path
 
@@ -25,10 +25,14 @@ def get_creation_date_from_db():
              "    from INFORMATION_SCHEMA.TABLES\n"
              "    where table_name = 'wiki'")
 
-    conn = toolforge.connect('meta')
-    with conn.cursor() as cur:
-        cur.execute(query)
-        return cur.fetchone()[0]
+    try:
+        conn = toolforge.connect('meta')
+        with conn.cursor() as cur:
+            cur.execute(query)
+            return cur.fetchone()[0]
+    except pymysql.err.OperationalError:
+        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+        exit(1)
 
 
 def save_links_to_csv(entries):
