@@ -52,6 +52,15 @@ def get_last_update_local():
         return None
 
 
+def update_local_db(update_time):
+    df = pd.read_csv(CSV_UPDATE_TIME)
+    if 'meta' in df.values:
+        df.loc[df['dbname'] == 'meta', 'update_time'] = update_time
+        df.to_csv(CSV_UPDATE_TIME, mode='w', header=True, index=False)
+    else:
+        update_time_df = pd.DataFrame(['meta', update_time], columns=['dbname', 'update_time'])
+        update_time_df.to_csv(CSV_UPDATE_TIME, mode='a', header=True, index=False)
+
 
 def update_checker():
     wiki_db_update_time = get_creation_date_from_db()
@@ -64,6 +73,7 @@ def update_checker():
 
     db_info = get_wikipages_from_db()
     save_links_to_csv(db_info)
+    update_local_db(wiki_db_update_time)
 
 
 
