@@ -14,6 +14,8 @@ def get_wiki_list(filename, start_idx, end_idx):
     return wikis[start_idx:end_idx+1]
 
 def save_content(wiki, data_list, missed):
+    ## consider using `chunksize` if required
+
     data_df = pd.DataFrame(data_list, columns=['id', 'title', 'url', 'length', 'content', 'format', 'model', 'touched'])
     data_df['wiki'] = wiki
     data_df.to_csv('wiki_contents.csv', mode='a', header=False, index=False)
@@ -25,9 +27,17 @@ def save_content(wiki, data_list, missed):
 def get_contents(wikis):
     user_agent = toolforge.set_user_agent('abstract-wiki-ds')
     for wiki in wikis:
-        session = mwapi.Session(wiki, user_agent=user_agent)
+
+        try:
+            session = mwapi.Session(wiki, user_agent=user_agent)
+        except Exception as e:
+            print("Failed to connect to ", wiki, "\n", e)
+            continue
+
         data_list = []
+        cnt_data_list = 0
         missed = []
+        cnt_missed = 0
         _gapcontinue = ''
         _continue = ''
 
@@ -43,7 +53,11 @@ def get_contents(wikis):
                     'continue': _continue,
                     }
             
-            result = session.get(params)
+            try:
+                result = session.get(params)
+            except Exception as e:
+                print("Could not GET ", wiki, "\n", e)
+                break
             
             if 'query' in result.keys():
                 for page in list(result['query']['pages'].values()):
@@ -76,18 +90,21 @@ def get_contents(wikis):
                     except:
                         if ('title' in page.keys()) and ('pageid' in page.keys()):
                             missed.append([page['title'], page['pageid']])
+            
+                cnt_data_list += len(data_list)
+                cnt_missed += len(missed)
+                save_content(wiki, data_list, missed)
+                print(cnt_data_list, 'pages loaded...')
+                data_list, missed = [], []
+
             try:
                 _continue = result['continue']['continue']
                 _gapcontinue = result['continue']['gapcontinue'] if 'gapcontinue' in  result['continue'] else ''
             except:
                 break
-            
-            print(len(data_list), 'pages loaded...')
 
         print("All pages loaded for %s. Missed: %d, Loaded: %d" \
-            %(wiki, len(missed), len(data_list)))
-
-        save_content(wiki, data_list, missed)
+            %(wiki, cnt_missed, cnt_data_list))
     
     print("Done loading!")
 
