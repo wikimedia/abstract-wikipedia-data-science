@@ -2,6 +2,9 @@
 wikipages.txt
 wikipages.csv
 
+# Output files
+out_files/
+
 # COMMON PYTHOM GITIGNORE
 # Byte-compiled / optimized / DLL files
 __pycache__/

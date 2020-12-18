@@ -25,9 +25,14 @@ def save_content(wiki, data_list, missed):
     missed_df.to_csv('missed_wiki_contents.csv', mode='a', header=False, index=False)
 
 def get_contents(wikis):
+    '''
+    Possible ways for the process to fail:
+    1. Failed to connect to wiki (See from output)
+    2. Connected but could not GET wiki (See from output)
+    3. Could not grab a page (Listed in missed pages)
+    '''
     user_agent = toolforge.set_user_agent('abstract-wiki-ds')
     for wiki in wikis:
-
         try:
             session = mwapi.Session(wiki, user_agent=user_agent)
         except Exception as e:
@@ -89,7 +94,8 @@ def get_contents(wikis):
                             data_list.append([pageid, title, url, length, content, content_format, content_model, touched])
                     except:
                         if ('title' in page.keys()) and ('pageid' in page.keys()):
-                            missed.append([page['title'], page['pageid']])
+                            if ('lastrevid' in page.keys()) and (revid != 0):
+                                missed.append([page['title'], page['pageid']])
             
                 cnt_data_list += len(data_list)
                 cnt_missed += len(missed)
@@ -107,6 +113,9 @@ def get_contents(wikis):
             %(wiki, cnt_missed, cnt_data_list))
     
     print("Done loading!")
+
+def get_missed_contents(filename='missed_wiki_contents.csv'):
+    pass
 
 if __name__ == "__main__":
     
