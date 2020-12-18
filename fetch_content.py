@@ -13,7 +13,7 @@ def get_wiki_list(filename, start_idx, end_idx):
     wikis = df['url'].values
     return wikis[start_idx:end_idx+1]
 
-def save_content(wiki, data_list, missed):
+def save_content(wiki, data_list, missed, step=1):
     ## consider using `chunksize` if required
 
     data_df = pd.DataFrame(data_list, columns=['id', 'title', 'url', 'length', 'content', 'format', 'model', 'touched'])
@@ -22,6 +22,7 @@ def save_content(wiki, data_list, missed):
 
     missed_df = pd.DataFrame(missed, columns=['title', 'pageid'])
     missed_df['wiki'] = wiki
+    missed_df['step'] = step
     missed_df.to_csv('missed_wiki_contents.csv', mode='a', header=False, index=False)
 
 def get_contents(wikis):
@@ -36,7 +37,7 @@ def get_contents(wikis):
         try:
             session = mwapi.Session(wiki, user_agent=user_agent)
         except Exception as e:
-            print("Failed to connect to ", wiki, "\n", e)
+            print("Failed to connect to", wiki, "\n", e)
             continue
 
         data_list = []
@@ -61,7 +62,7 @@ def get_contents(wikis):
             try:
                 result = session.get(params)
             except Exception as e:
-                print("Could not GET ", wiki, "\n", e)
+                print("Could not GET", wiki, "\n", e)
                 break
             
             if 'query' in result.keys():
@@ -115,7 +116,56 @@ def get_contents(wikis):
     print("Done loading!")
 
 def get_missed_contents(filename='missed_wiki_contents.csv'):
-    pass
+
+    df = pd.read_csv(filename, names=['title', 'pageid', 'wiki'])
+    user_agent = toolforge.set_user_agent('abstract-wiki-ds')
+    print("Started loading missed contents...")
+
+    for wiki, w_df in df.groupby('wiki'):
+        try:
+            session = mwapi.Session(wiki, user_agent=user_agent)
+        except Exception as e:
+            print("Failed to connect to", wiki, "\n", e)
+            continue
+            
+        pageids = w_df['pageid'].values
+        titles = w_df['title'].values
+        data_list = []
+        missed = []
+        
+        for pageid, title in zip(list(pageids), titles):
+            params = {
+                'action':'query',
+                'format':'json',
+                'prop':'revisions|info',
+                'pageids':pageid,
+                'rvprop':'content',
+                'rvslots':'main',
+                'inprop':'url',
+                'formatversion':2
+            }
+
+            try:
+                result = session.get(params)
+                page = result['query']['pages'][0]
+                if page['lastrevid']!=0:
+                    url = page['fullurl']
+                    length = page['length']
+                    content = page['fullurl']
+                    content_info = page['revisions'][0]['slots']['main']
+                    content_format = content_info['contentformat']
+                    content_model = content_info['contentmodel']
+                    touched = page['touched']
+                    data_list.append([pageid, title, url, length, content, content_format, content_model, touched])
+            except Exception as e:
+                missed.append([pageid, title])
+                print("Miss:", pageid, "from wiki:", wiki, "\n", e)
+
+        save_content(wiki, data_list, missed, 2)
+        print("All pages loaded for %s. Missed: %d, Loaded: %d" \
+            %(wiki, len(missed), len(data_list)))
+
+    print("Done loading missed pages!")
 
 if __name__ == "__main__":
     
@@ -141,4 +191,5 @@ if __name__ == "__main__":
     
     wikis = get_wiki_list('wikipages.csv', start_idx, end_idx)
     get_contents(wikis)
+    get_missed_contents()
     
