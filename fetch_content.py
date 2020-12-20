@@ -27,8 +27,14 @@ def save_content(wiki, data_list, missed, step=1):
     missed_df['step'] = step
     missed_df.to_csv('missed_wiki_contents.csv', mode='a', header=False, index=False)
 
-def get_contents(wikis):
+def needs_update(wiki, pageid, title, touched, revid):
+    return True
+
+def get_contents(wikis, revise=False):
     '''
+    revise: `False` collects all contents and saves fresh
+            `True` only collects those edits
+
     Possible ways for the process to fail:
     1. Failed to connect to wiki (See from output)
     2. Connected but could not GET wiki (See from output)
@@ -77,28 +83,29 @@ def get_contents(wikis):
                         url = page['fullurl']
                         revid = page['lastrevid']
                         
-                        params = {'action':'query',
-                                'format':'json',
-                                'prop':'revisions',
-                                'revids':revid,
-                                'rvprop':'content',
-                                'rvslots':'main',
-                                'formatversion':2
-                                }
-                
-                        rev_result = session.get(params)
+                        if (not revise) or needs_update(wiki, pageid, title, touched, revid):
+                            params = {'action':'query',
+                                    'format':'json',
+                                    'prop':'revisions',
+                                    'revids':revid,
+                                    'rvprop':'content',
+                                    'rvslots':'main',
+                                    'formatversion':2
+                                    }
+                    
+                            rev_result = session.get(params)
 
-                        content_info = rev_result['query']['pages'][0]['revisions'][0]['slots']['main']
-                        content = content_info['content']
-                        content_model = content_info['contentmodel']
-                        content_format = content_info['contentformat']
-                        
-                        if content_model=='Scribunto':
-                            data_list.append([pageid, title, url, length, content, content_format, content_model, touched])
-                    except:
+                            content_info = rev_result['query']['pages'][0]['revisions'][0]['slots']['main']
+                            content = content_info['content']
+                            content_model = content_info['contentmodel']
+                            content_format = content_info['contentformat']
+                            
+                            if content_model=='Scribunto':
+                                data_list.append([pageid, title, url, length, content, content_format, content_model, touched])
+                    except Exception as e:
                         if ('title' in page.keys()) and ('pageid' in page.keys()):
-                            if ('lastrevid' in page.keys()) and (revid != 0):
-                                missed.append([page['title'], page['pageid']])
+                            missed.append([pageid, title])
+                            print("Miss:", wiki, title, pageid, e)
             
                 cnt_data_list += len(data_list)
                 cnt_missed += len(missed)
@@ -117,9 +124,10 @@ def get_contents(wikis):
     
     print("Done loading!")
 
-def get_missed_contents(filename='missed_wiki_contents.csv'):
+def get_missed_contents(wikis, filename='missed_wiki_contents.csv'):
 
-    df = pd.read_csv(filename, names=['title', 'pageid', 'wiki'])
+    df = pd.read_csv(filename, names=['pageid', 'title', 'wiki', 'step'])
+    df = df[df.wiki.isin(wikis) & df.step==1]
     user_agent = toolforge.set_user_agent('abstract-wiki-ds')
     print("Started loading missed contents...")
 
@@ -153,8 +161,8 @@ def get_missed_contents(filename='missed_wiki_contents.csv'):
                 if page['lastrevid']!=0:
                     url = page['fullurl']
                     length = page['length']
-                    content = page['fullurl']
                     content_info = page['revisions'][0]['slots']['main']
+                    content = content_info['content']
                     content_format = content_info['contentformat']
                     content_model = content_info['contentmodel']
                     touched = page['touched']
@@ -183,6 +191,13 @@ if __name__ == "__main__":
         print("Error: Both indices should be integer.")
         sys.exit()
     
+    ## Check for optional revise argument
+    revise = False
+    try:
+        revise = sys.argv[3].lower() in ['true', 'yes', 'y', 't']
+    except:
+        pass
+    
     if start_idx<MIN_IDX or end_idx<MIN_IDX:
         print("Error: Indices should be %d or more." %MIN_IDX)
         sys.exit()
@@ -193,5 +208,5 @@ if __name__ == "__main__":
     
     wikis = get_wiki_list('wikipages.csv', start_idx, end_idx)
     get_contents(wikis)
-    get_missed_contents()
+    get_missed_contents(wikis=wikis)
     
