@@ -20,6 +20,8 @@ def save_content(wiki, data_list, missed, step=1):
     data_df['wiki'] = wiki
     data_df.to_csv('wiki_contents.csv', mode='a', header=False, index=False)
 
+    data_df[['id', 'title', 'wiki']].to_csv('wiki_pages_api.csv', mode='a', header=False, index=False)
+
     missed_df = pd.DataFrame(missed, columns=['title', 'pageid'])
     missed_df['wiki'] = wiki
     missed_df['step'] = step
