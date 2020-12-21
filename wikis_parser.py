@@ -53,7 +53,7 @@ def save_links_to_db(entries):
     :return: None
     """
     try:
-        conn = toolforge.connect(DATABASE_NAME)
+        conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
             cur.executemany('insert into Sources(dbname, url) values(?, ?)', entries)
         conn.commit()
