@@ -55,7 +55,7 @@ def save_links_to_db(entries):
     try:
         conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
-            cur.executemany('insert into Sources(dbname, url) values(?, ?)', entries)
+            cur.executemany('insert into Sources(dbname, url) values(%s, %s)', entries)
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError:
