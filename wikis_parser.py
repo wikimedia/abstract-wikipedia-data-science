@@ -6,6 +6,7 @@ import os.path
 CSV_LINKS = 'wikipages.csv'
 CSV_UPDATE_TIME = 'update_time.csv'
 
+DATABASE_NAME = 's54588__data'
 
 def get_wikipages_from_db():
     """
@@ -39,6 +40,24 @@ def get_creation_date_from_db():
         with conn.cursor() as cur:
             cur.execute(query)
             return cur.fetchone()[0]
+    except pymysql.err.OperationalError:
+        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+        exit(1)
+
+
+def save_links_to_db(entries):
+    """
+    Saves links and dbnames to the local project database.
+
+    :param entries: List(tuple) of lists(tuples), with pairs 'dbname - url'
+    :return: None
+    """
+    try:
+        conn = toolforge.connect(DATABASE_NAME)
+        with conn.cursor() as cur:
+            cur.executemany('insert into Sources(dbname, url) values(?, ?)', entries)
+        conn.commit()
+        conn.close()
     except pymysql.err.OperationalError:
         print('Wikiprojects update checker: failure, please use only in Toolforge environment')
         exit(1)
@@ -102,6 +121,8 @@ def update_checker():
 
     db_info = get_wikipages_from_db()
     print('Wikiprojects update checker: wikilinks info fetched from db')
+    save_links_to_db(db_info)
+    print('Wikiprojects update checker: wikipages links updated in db')
     save_links_to_csv(db_info)
     print('Wikiprojects update checker: wikipages links updated')
     update_local_db(wiki_db_update_time)
