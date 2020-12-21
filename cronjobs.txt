@@ -1,0 +1,18 @@
+## Add these to the end of crontab -e
+
+45 7 * * * jsub -N cron-1 -once -quiet abstract-wikipedia-data-science/script.sh 0 50
+45 7 * * * jsub -N cron-2 -once -quiet abstract-wikipedia-data-science/script.sh 51 100
+45 7 * * * jsub -N cron-3 -once -quiet abstract-wikipedia-data-science/script.sh 101 150
+45 7 * * * jsub -N cron-4 -once -quiet abstract-wikipedia-data-science/script.sh 151 200
+45 7 * * * jsub -N cron-5 -once -quiet abstract-wikipedia-data-science/script.sh 201 250
+45 7 * * * jsub -N cron-6 -once -quiet abstract-wikipedia-data-science/script.sh 251 300
+45 7 * * * jsub -N cron-7 -once -quiet abstract-wikipedia-data-science/script.sh 301 350
+45 7 * * * jsub -N cron-8 -once -quiet abstract-wikipedia-data-science/script.sh 351 400
+45 7 * * * jsub -N cron-9 -once -quiet abstract-wikipedia-data-science/script.sh 401 450
+45 7 * * * jsub -N cron-10 -once -quiet abstract-wikipedia-data-science/script.sh 451 500
+45 7 * * * jsub -N cron-11 -once -quiet abstract-wikipedia-data-science/script.sh 501 550
+45 7 * * * jsub -N cron-12 -once -quiet abstract-wikipedia-data-science/script.sh 551 600
+45 7 * * * jsub -N cron-13 -once -quiet abstract-wikipedia-data-science/script.sh 601 650
+45 7 * * * jsub -N cron-14 -once -quiet abstract-wikipedia-data-science/script.sh 651 700
+45 7 * * * jsub -N cron-15 -once -quiet abstract-wikipedia-data-science/script.sh 701 750
+45 7 * * * jsub -N cron-16 -once -quiet abstract-wikipedia-data-science/script.sh 751 800
