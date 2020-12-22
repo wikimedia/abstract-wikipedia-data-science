@@ -53,10 +53,10 @@ def save_links_to_db(entries):
     :return: None
     """
     query = ("if not exists ("
-             "select 1 from Sources where dbname = %s)"
-             "begin"
+             "select 1 from Sources where dbname = %s)\n"
+             "begin "
              "insert into Sources(dbname, url) values(%s, %s)"
-             "end;")
+             " end;")
     try:
         conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
@@ -87,9 +87,9 @@ def get_last_update_local_db():
 
     :return: Datetime.datetime of last update or None
     """
-    query = ("select update_time"
-             "from Sources"
-             "where dbname = 'meta'")
+    query = ("select update_time\n"
+             "from Sources\n"
+             "where dbname = 'meta'\n")
     update_time = None
 
     try:
@@ -132,14 +132,14 @@ def _update_local_db(update_time):
     :return: None
     """
     query = ("if not exists ("
-             "select 1 from Sources where dbname = 'meta')"
-             "begin"
-             "insert into Sources(dbname, update_time) values(meta, %s)"
-             "end"
-             "else"
-             "begin"
-             "update Sources set update_time = %s where dbname = 'meta'"
-             "end"
+             "select 1 from Sources where dbname = 'meta')\n"
+             "begin\n"
+             "insert into Sources(dbname, update_time) values(meta, %s)\n"
+             "end\n"
+             "else\n"
+             "begin\n"
+             "update Sources set update_time = %s where dbname = 'meta'\n"
+             "end\n"
              "endif;")
     try:
         conn = toolforge.toolsdb(DATABASE_NAME)
