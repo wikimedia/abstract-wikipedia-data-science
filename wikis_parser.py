@@ -61,7 +61,7 @@ def save_links_to_db(entries):
         conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
             for elem in entries:
-                cur.execute(query, elem[0], elem[0], elem[1])
+                cur.execute(query, [elem[0], elem[0], elem[1]])
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError:
