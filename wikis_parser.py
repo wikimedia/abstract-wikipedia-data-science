@@ -144,7 +144,8 @@ def _update_local_db(update_time):
     try:
         conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
-            cur.execute(query, [update_time.strftime('%Y-%m-%d %H:%M:%S')])
+            time = update_time.strftime('%Y-%m-%d %H:%M:%S')
+            cur.execute(query, [time, time])
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError:
