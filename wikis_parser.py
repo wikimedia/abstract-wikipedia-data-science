@@ -124,6 +124,34 @@ def get_last_update_local():
         return None
 
 
+def _update_local_db(update_time):
+    """
+    Saves new update time for meta table, creating corresponding row if needed.
+
+    :param update_time: Datetime.datetime, time of last update for meta table
+    :return: None
+    """
+    query = ("if not exists ("
+             "select 1 from Sources where dbname = 'meta')"
+             "begin"
+             "insert into Sources(dbname, update_time) values(meta, %s)"
+             "end"
+             "else"
+             "begin"
+             "update Sources set update_time = %s where dbname = 'meta'"
+             "end"
+             "endif;")
+    try:
+        conn = toolforge.toolsdb(DATABASE_NAME)
+        with conn.cursor() as cur:
+            cur.execute(query, [update_time.strftime('%Y-%m-%d %H:%M:%S')])
+        conn.commit()
+        conn.close()
+    except pymysql.err.OperationalError:
+        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+        exit(1)
+
+
 def update_local_db(update_time):
     """
     Saves new update time for meta table, creating corresponding row if needed.
@@ -158,6 +186,7 @@ def update_checker():
     save_links_to_csv(db_info)
     print('Wikiprojects update checker: wikipages links updated')
     update_local_db(wiki_db_update_time)
+    _update_local_db(wiki_db_update_time)
     print('Wikiprojects update checker: update finished')
 
 
