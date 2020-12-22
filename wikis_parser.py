@@ -52,11 +52,8 @@ def save_links_to_db(entries):
     :param entries: List(tuple) of lists(tuples), with pairs 'dbname - url'
     :return: None
     """
-    query = ("if not exists ("
-             "select 1 from Sources where dbname = %s)\n"
-             "begin "
-             "insert into Sources(dbname, url) values(%s, %s)"
-             " end;")
+    query = ("insert into Sources(dbname, url) values(%s, %s)\n"
+         "on duplicate key update url = %s")
     try:
         conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
@@ -131,16 +128,9 @@ def _update_local_db(update_time):
     :param update_time: Datetime.datetime, time of last update for meta table
     :return: None
     """
-    query = ("if not exists ("
-             "select 1 from Sources where dbname = 'meta')\n"
-             "begin\n"
-             "insert into Sources(dbname, update_time) values(meta, %s)\n"
-             "end\n"
-             "else\n"
-             "begin\n"
-             "update Sources set update_time = %s where dbname = 'meta'\n"
-             "end\n"
-             "endif;")
+    query = ("insert into Sources(dbname, update_time) values('meta', %s)\n"
+             "on duplicate key update update_time = %s"
+             )
     try:
         conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
