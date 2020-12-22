@@ -8,7 +8,7 @@ Table creation scripts:
 ```mysql
 create table Sources(
     dbname varchar(32) not null,
-    url text not null,
+    url text,
     update_time datetime,
     primary key (dbname)
 );
