@@ -52,10 +52,16 @@ def save_links_to_db(entries):
     :param entries: List(tuple) of lists(tuples), with pairs 'dbname - url'
     :return: None
     """
+    query = ("if not exists ("
+             "select 1 from Sources where dbname = %s)"
+             "begin"
+             "insert into Sources(dbname, url) values(%s, %s)"
+             "end;")
     try:
         conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
-            cur.executemany('insert into Sources(dbname, url) values(%s, %s)', entries)
+            for elem in entries:
+                cur.execute(query, elem[0], elem[0], elem[1])
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError:
