@@ -94,7 +94,6 @@ def get_last_update_local_db():
         with conn.cursor() as cur:
             cur.execute(query)
             update_time = cur.fetchone()
-            print(update_time)
         return update_time
     except pymysql.err.OperationalError:
         print('Wikiprojects update checker: failure, please use only in Toolforge environment')
