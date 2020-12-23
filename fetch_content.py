@@ -49,8 +49,7 @@ def _save_content(wiki, data_list, missed, step=1):
             for index, elem in data_df.iterrows():
                 time = elem['touched'].replace('T', ' ').replace('Z', ' ')
                 cur.execute(query,
-                            [dbname, elem['id'], elem['title'], elem['content'],
-                             elem['touched'].strftime('%Y-%m-%d %H:%M:%S'), 1, 1])
+                            [dbname, elem['id'], elem['title'], elem['content'], time, 1, 1])
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError:
@@ -255,7 +254,7 @@ if __name__ == "__main__":
         print("Error: Ending index must be greater than start index.")
         sys.exit()
     
-    wikis = _get_wiki_list('wikipages.csv', start_idx, end_idx)
+    wikis = _get_wiki_list(start_idx, end_idx)
     get_contents(wikis)
     get_missed_contents(wikis=wikis)
     
