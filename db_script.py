@@ -6,24 +6,16 @@ DATABASE_NAME = 's54588__data'
 
 
 def save_to_db(entries):
-    query = ("if not exists ("
-             "select 1 from Scripts where page_id = %s)"
-             "begin"
-             "insert into Scripts(dbname, page_id, title, touched, in_database)"
-             "             values(%s, %s, %s, %s, %s)"
-             "end"
-             "else"
-             "begin"
-             "update Scripts set in_database = %s where page_id = %s"
-             "end"
-             "endif;")
+    query = ("insert into Scripts(dbname, page_id, title, touched, in_database) "
+             "             values(%s, %s, %s, %s, %s)\n"
+             "on duplicate key update in_database = %s"
+             )
     try:
         conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
             for elem in entries:
-                cur.execute(query, elem['page_id'],
-                            elem['db'], elem['page_id'], elem['page_title'], elem['page_touched'], 1,
-                            1, elem['page_id'])
+                cur.execute(query,
+                            [elem['db'], elem['page_id'], elem['page_title'], elem['page_touched'], 1, 1])
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError:
