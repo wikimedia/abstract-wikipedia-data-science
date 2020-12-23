@@ -21,8 +21,8 @@ create table Scripts(
     content_model varbinary(32),
     touched datetime,
     dbname varchar(32) not null,
-    in_database bool,
-    in_api bool,
+    in_database bool default 0,
+    in_api bool default 0,
     primary key (page_id, dbname),
     foreign key (dbname) references Sources(dbname)
 );
