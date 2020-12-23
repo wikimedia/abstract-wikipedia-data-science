@@ -38,7 +38,7 @@ def _save_content(wiki, data_list, missed, step=1):
     data_df = pd.DataFrame(data_list, columns=['id', 'title', 'url', 'length', 'content', 'format', 'model', 'touched'])
 
     query = ("insert into Scripts(dbname, page_id, title, sourcecode, touched, in_api) "
-             "             values(%s, %s, %s, %s, %s)\n"
+             "             values(%s, %s, %s, %s, %s, %s)\n"
              "on duplicate key update in_api = %s"
              )
     try:
@@ -52,8 +52,8 @@ def _save_content(wiki, data_list, missed, step=1):
                             [dbname, elem['id'], elem['title'], elem['content'], time, 1, 1])
         conn.commit()
         conn.close()
-    except pymysql.err.OperationalError:
-        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+    except pymysql.err.OperationalError as err:
+        print(err)
         exit(1)
 
 
