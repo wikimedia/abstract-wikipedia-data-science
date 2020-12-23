@@ -34,10 +34,11 @@ conn = toolforge.toolsdb(DATABASE_NAME)
 ## List databases
 dbs = []
 with conn.cursor() as cur:
-    cur.execute("select dbnames from Sources where url is not NULL")    # all, except 'meta'
+    cur.execute("select dbname from Sources where url is not NULL")    # all, except 'meta'
     for db in cur:
         dbs.append(db[0])
 
+conn = toolforge.connect('meta')
 ## Get all pages
 with conn.cursor() as cur:
     for db in dbs:
