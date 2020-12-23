@@ -14,9 +14,8 @@ create table Sources(
 );
 
 create table Scripts(
-    id int unsigned not null auto_increment,
-    title text,
     page_id int unsigned not null,
+    title text,
     length int unsigned,
     sourcecode text,
     content_model varbinary(32),
@@ -24,7 +23,7 @@ create table Scripts(
     dbname varchar(32) not null,
     in_database bool,
     in_api bool,
-    primary key (id),
+    primary key (page_id, dbname),
     foreign key (dbname) references Sources(dbname)
 );
 
