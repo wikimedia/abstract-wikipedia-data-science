@@ -13,7 +13,7 @@ def save_to_db(entries):
     try:
         conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
-            for index, elem in entries:
+            for index, elem in entries.iterrows():
                 cur.execute(query,
                             [elem['db'], elem['page_id'], elem['page_title'], elem['page_touched'], 1, 1])
         conn.commit()
@@ -51,6 +51,7 @@ with conn.cursor() as cur:
             df_page.to_csv('wiki_pages_db.csv', mode='a', header=False, index=False)
 
             # saving to db
-            save_to_db(db)
+            save_to_db(df_page)
+            print('Finished loading scripts from ', db)
         except Exception as err:
-            print('Error loading pages from db: ', db)
+            print('Error loading pages from db: ', db, '\nError:', err)
