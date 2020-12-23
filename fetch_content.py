@@ -4,6 +4,7 @@ import mwapi
 import toolforge
 import pandas as pd
 import pymysql
+import datetime
 
 
 ## define constants
@@ -46,6 +47,7 @@ def _save_content(wiki, data_list, missed, step=1):
             cur.execute("select dbname from Sources where url = %s", wiki)
             dbname = cur.fetchone()[0]
             for index, elem in data_df.iterrows():
+                time = elem['touched'].replace('T', ' ').replace('Z', ' ')
                 cur.execute(query,
                             [dbname, elem['id'], elem['title'], elem['content'],
                              elem['touched'].strftime('%Y-%m-%d %H:%M:%S'), 1, 1])
