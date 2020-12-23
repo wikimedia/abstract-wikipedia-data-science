@@ -42,7 +42,7 @@ conn = toolforge.connect('meta')
 ## Get all pages
 with conn.cursor() as cur:
     for db in dbs:
-        cur.execute("use "+db)
+        cur.execute("use " + db +"_p")
         try:
             SQL_Query = pd.read_sql_query("select page_id, page_title, page_touched from page where page_content_model='Scribunto'", conn)
             df_page = pd.DataFrame(SQL_Query, columns=['page_id', 'page_title', 'page_touched'])\
