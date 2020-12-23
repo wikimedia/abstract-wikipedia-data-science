@@ -3,15 +3,57 @@ import sys
 import mwapi
 import toolforge
 import pandas as pd
+import pymysql
+
 
 ## define constants
 MIN_IDX = 0
+DATABASE_NAME = 's54588__data'
+
+
+def _get_wiki_list(start_idx, end_idx):
+    wikis = []
+    try:
+        conn = toolforge.toolsdb(DATABASE_NAME)
+        with conn.cursor() as cur:
+            cur.execute("select url from Sources where url is not NULL")  # all, except 'meta'
+            for wiki in cur:
+                wikis.append(wiki[0])
+        return wikis[start_idx:end_idx + 1]
+    except pymysql.err.OperationalError:
+        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+        exit(1)
+
 
 def get_wiki_list(filename, start_idx, end_idx):
     ## List the wikis in the rage [start_idx, end_idx] and run function
     df = pd.read_csv(filename)
     wikis = df['url'].values
     return wikis[start_idx:end_idx+1]
+
+
+def _save_content(wiki, data_list, missed, step=1):
+    data_df = pd.DataFrame(data_list, columns=['id', 'title', 'url', 'length', 'content', 'format', 'model', 'touched'])
+
+    query = ("insert into Scripts(dbname, page_id, title, sourcecode, touched, in_api) "
+             "             values(%s, %s, %s, %s, %s)\n"
+             "on duplicate key update in_api = %s"
+             )
+    try:
+        conn = toolforge.toolsdb(DATABASE_NAME)
+        with conn.cursor() as cur:
+            cur.execute("select dbname from Sources where url = %s", wiki)
+            dbname = cur.fetchone()[0]
+            for index, elem in data_df.iterrows():
+                cur.execute(query,
+                            [dbname, elem['id'], elem['title'], elem['content'], elem['touched'], 1, 1])
+        conn.commit()
+        conn.close()
+    except pymysql.err.OperationalError:
+        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+        exit(1)
+
+
 
 def save_content(wiki, data_list, missed, step=1):
     ## consider using `chunksize` if required
@@ -110,6 +152,7 @@ def get_contents(wikis, revise=False):
                 cnt_data_list += len(data_list)
                 cnt_missed += len(missed)
                 save_content(wiki, data_list, missed)
+                _save_content(wiki, data_list, missed)
                 print(cnt_data_list, 'pages loaded...')
                 data_list, missed = [], []
 
@@ -123,6 +166,7 @@ def get_contents(wikis, revise=False):
             %(wiki, cnt_missed, cnt_data_list))
     
     print("Done loading!")
+
 
 def get_missed_contents(wikis, filename='missed_wiki_contents.csv'):
 
@@ -172,6 +216,7 @@ def get_missed_contents(wikis, filename='missed_wiki_contents.csv'):
                 print("Miss:", pageid, "from wiki:", wiki, "\n", e)
 
         save_content(wiki, data_list, missed, 2)
+        _save_content(wiki, data_list, missed, 2)
         print("All pages loaded for %s. Missed: %d, Loaded: %d" \
             %(wiki, len(missed), len(data_list)))
 
