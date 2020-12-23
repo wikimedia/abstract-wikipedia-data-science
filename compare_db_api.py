@@ -2,6 +2,27 @@ import pandas as pd
 import numpy as np
 import csv
 import sys
+
+import toolforge
+import pymysql
+
+DATABASE_NAME = 's54588__data'
+
+
+def compare_with_saved_by_db():
+    try:
+        conn = toolforge.toolsdb(DATABASE_NAME)
+        with conn.cursor() as cur:
+            cur.execute("select count(*) from Scripts where in_api = 1 and in_database = 0")
+            print("DB info: ntries captured from api, but not from database: ", cur.fetchone()[0])
+
+            cur.execute("select count(*) from Scripts where in_api = 0 and in_database = 1")
+            print("DB info: Entries captured from database, but not from api: ", cur.fetchone()[0])
+    except pymysql.err.OperationalError:
+        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+        exit(1)
+
+
 csv.field_size_limit(sys.maxsize)
 
 ## Load DB CSV
@@ -37,6 +58,8 @@ print("Length of unique pages in db:", len(df))
 print("Length of unique pages in api:", uniq_api)
 
 df.to_csv('comparison_db.csv', header=False, index=False)
+
+compare_with_saved_by_db()
 
 print("Ok")
 
