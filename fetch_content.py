@@ -276,15 +276,13 @@ if __name__ == "__main__":
     
     ## Check arguments for errors
     if len(sys.argv)<3:
-        print("Error: Two args required: start and end index. E.g python3 fetch_content.py 1 8.")
-        sys.exit()
+        sys.exit("Error: Two args required: start and end index. E.g python3 fetch_content.py 1 8.")
     
     try:
         start_idx = int(sys.argv[1])
         end_idx = int(sys.argv[2])
     except:
-        print("Error: Both indices should be integer.")
-        sys.exit()
+        sys.exit("Error: Both indices should be integer.")
     
     ## Check for optional revise argument
     revise = False
@@ -294,12 +292,10 @@ if __name__ == "__main__":
         pass
     
     if start_idx<MIN_IDX or end_idx<MIN_IDX:
-        print("Error: Indices should be %d or more." %MIN_IDX)
-        sys.exit()
+        sys.exit("Error: Indices should be %d or more." %MIN_IDX)
 
     if start_idx>end_idx:
-        print("Error: Ending index must be greater than start index.")
-        sys.exit()
+        sys.exit("Error: Ending index must be greater than start index.")
     
     wikis = get_wiki_list(start_idx, end_idx)
     get_contents(wikis)
