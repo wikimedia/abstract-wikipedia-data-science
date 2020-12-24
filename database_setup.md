@@ -23,6 +23,9 @@ create table Scripts(
     dbname varchar(32) not null,
     in_database bool default 0,
     in_api bool default 0,
+    lastrevid int unsigned,
+    url varchar(32),
+    is_missed bool default 0,
     primary key (page_id, dbname),
     foreign key (dbname) references Sources(dbname)
 );
