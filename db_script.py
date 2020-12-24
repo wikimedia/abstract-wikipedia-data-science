@@ -30,11 +30,16 @@ def encode_if_necessary(b):
 
 
 def get_dbs():
-    conn = toolforge.toolsdb(DATABASE_NAME)
-
-    with conn.cursor() as cur:
-        cur.execute("select dbname from Sources where url is not NULL")    # all, except 'meta'
-        return [db[0] for db in cur]
+    try:
+        conn = toolforge.toolsdb(DATABASE_NAME)
+        with conn.cursor() as cur:
+            cur.execute("select dbname from Sources where url is not NULL")    # all, except 'meta'
+            ret = [db[0] for db in cur]
+        conn.close()
+        return ret
+    except pymysql.err.OperationalError as err:
+        print(err)
+        exit(1)
 
 
 def get_data(dbs):
@@ -53,6 +58,7 @@ def get_data(dbs):
                 # Saving to db
                 save_to_db(df_page, db)
                 print('Finished loading scripts from ', db)
+            conn.close()
         except Exception as err:
                 print('Error loading pages from db: ', db, '\nError:', err)
 

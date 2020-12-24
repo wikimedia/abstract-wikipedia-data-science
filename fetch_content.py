@@ -5,7 +5,11 @@ import toolforge
 import pandas as pd
 import pymysql
 import datetime
+import numpy as np
 
+pymysql.converters.encoders[np.int64] = pymysql.converters.escape_int
+pymysql.converters.conversions = pymysql.converters.encoders.copy()
+pymysql.converters.conversions.update(pymysql.converters.decoders)
 
 ## define constants
 MIN_IDX = 0
@@ -13,14 +17,13 @@ DATABASE_NAME = 's54588__data'
 
 
 def get_wiki_list(start_idx, end_idx):
-    wikis = []
     try:
         conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
             cur.execute("select url from Sources where url is not NULL")  # all, except 'meta'
-            for wiki in cur:
-                wikis.append(wiki[0])
-        return wikis[start_idx:end_idx + 1]
+            ret = [wiki[0] for wiki in cur][start_idx:end_idx + 1]
+        conn.close()
+        return ret
     except pymysql.err.OperationalError:
         print('Wikiprojects update checker: failure, please use only in Toolforge environment')
         exit(1)
@@ -28,7 +31,7 @@ def get_wiki_list(start_idx, end_idx):
 
 def save_content(wiki, data_list):
 
-    data_df = pd.DataFrame(data_list, columns=['id', 'title', 'url', 'length', 'content', 'model', 'touched', 'lastrevid'])
+    data_df = pd.DataFrame(data_list, columns=['id', 'title', 'url', 'length', 'content', 'content_model', 'touched', 'lastrevid'])
 
     query = ("insert into Scripts(dbname, page_id, title, sourcecode, touched, in_api, length, content_model, lastrevid, url) "
              "             values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)\n"
@@ -55,10 +58,10 @@ def save_content(wiki, data_list):
 
 def save_missed_content(wiki, missed):
 
-    missed_df = pd.DataFrame(missed, columns=['id', 'title'])
+    missed_df = pd.DataFrame(missed, columns=['id'])
 
-    query = ("insert into Scripts(dbname, page_id, title, in_api, is_missed) "
-             "             values(%s, %s, %s, %s, %s)\n"
+    query = ("insert into Scripts(dbname, page_id, in_api, is_missed) "
+             "             values(%s, %s, %s, %s)\n"
              "on duplicate key update in_api = %s, is_missed = %s"
              )
     try:
@@ -68,7 +71,7 @@ def save_missed_content(wiki, missed):
             dbname = cur.fetchone()[0]
             for index, elem in missed_df.iterrows():
                 cur.execute(query,
-                            [dbname, elem['id'], elem['title'], 1, 1, 1, 1])
+                            [dbname, elem['id'], 1, 1, 1, 1])
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError as err:
@@ -150,11 +153,11 @@ def get_contents(wikis, revise=False):
                             content_model = content_info['contentmodel']
                             
                             if content_model=='Scribunto':
-                                data_list.append([pageid, title, url, length, content, content_format, content_model, touched])
-                    except Exception as e:
-                        if ('title' in page.keys()) and ('pageid' in page.keys()):
-                            missed.append([pageid, title])
-                            print("Miss:", wiki, title, pageid, e)
+                                data_list.append([pageid, title, url, length, content, content_model, touched, revid])
+                    except Exception as err:
+                        if 'pageid' in page.keys():
+                            missed.append([pageid])
+                            print("Miss:", wiki, title, pageid, "\n" ,err)
             
                 cnt_data_list += len(data_list)
                 cnt_missed += len(missed)
@@ -187,8 +190,7 @@ def get_db_map(wikis):
         conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
             cur.execute(query,wikis)
-            for data in cur:
-                db_map[data[0]] = data[1]
+            db_map = {data[0]:data[1] for data in cur}
         conn.close()
     except pymysql.err.OperationalError as err:
         print(err)
@@ -206,13 +208,13 @@ def get_missed_contents(wikis):
     db_map, placeholders = get_db_map(wikis)
 
     ## Get the pageids of missed pages for the current set of wikis
-    query = ("select page_id, dbname from Scripts where dbname in (%s) and is_api=1 and is_missed=1" % placeholders)
+    query = ("select page_id, dbname from Scripts where dbname in (%s) and in_api=1 and is_missed=1" % placeholders)
     
     try:
         conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
             cur.execute(query, list(db_map.keys()))
-            df = pd.DataFrame(cur, columns=['page_id', 'dbname'])
+            df = pd.DataFrame(cur, columns=['pageid', 'dbname'])
         conn.close()
     except pymysql.err.OperationalError as err:
         print(err)
@@ -248,6 +250,7 @@ def get_missed_contents(wikis):
                 page = result['query']['pages'][0]
                 if page['lastrevid']!=0:
                     url = page['fullurl']
+                    title = page['title']
                     length = page['length']
                     content_info = page['revisions'][0]['slots']['main']
                     content = content_info['content']
@@ -257,9 +260,9 @@ def get_missed_contents(wikis):
                     
                     if content_model=='Scribunto':
                         data_list.append([pageid, title, url, length, content, content_model, touched, revid])
-            except Exception as e:
-                missed.append([pageid, title])
-                print("Miss:", pageid, "from wiki:", wiki, "\n", e)
+            except Exception as err:
+                missed.append([pageid])
+                print("Miss:", pageid, "from wiki:", wiki, "\n", err)
 
         save_content(wiki, data_list)
         save_missed_content(wiki, missed)
