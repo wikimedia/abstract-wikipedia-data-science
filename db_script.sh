@@ -1,3 +1,4 @@
 cd abstract-wikipedia-data-science
-source my_venv/bin/activate
+source venv/bin/activate
 python3 db_script.py
+python3 get_db_pages.py

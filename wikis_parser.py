@@ -6,6 +6,7 @@ import os.path
 CSV_LINKS = 'wikipages.csv'
 CSV_UPDATE_TIME = 'update_time.csv'
 
+DATABASE_NAME = 's54588__data'
 
 def get_wikipages_from_db():
     """
@@ -44,6 +45,27 @@ def get_creation_date_from_db():
         exit(1)
 
 
+def save_links_to_db(entries):
+    """
+    Saves links and dbnames to the local project database.
+
+    :param entries: List(tuple) of lists(tuples), with pairs 'dbname - url'
+    :return: None
+    """
+    query = ("insert into Sources(dbname, url) values(%s, %s)\n"
+         "on duplicate key update url = %s")
+    try:
+        conn = toolforge.toolsdb(DATABASE_NAME)
+        with conn.cursor() as cur:
+            for elem in entries:
+                cur.execute(query, [elem[0], elem[1], elem[1]])
+        conn.commit()
+        conn.close()
+    except pymysql.err.OperationalError:
+        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+        exit(1)
+
+
 def save_links_to_csv(entries):
     """
     Creates file with 'dbname - url' pairs and saves them here in csv format.
@@ -53,6 +75,30 @@ def save_links_to_csv(entries):
     """
     entries_df = pd.DataFrame(entries, columns=['dbname', 'url'])
     entries_df.to_csv(CSV_LINKS, mode='w', header=True, index=False)
+
+
+def get_last_update_local_db():
+    """
+    Looks into csv with last update times and fetches last update time for meta table, if it is stored.
+    If such file doesn't exits, creates it.
+
+    :return: Datetime.datetime of last update or None
+    """
+    query = ("select update_time\n"
+             "from Sources\n"
+             "where dbname = 'meta'\n")
+    update_time = None
+
+    try:
+        conn = toolforge.toolsdb(DATABASE_NAME)
+        with conn.cursor() as cur:
+            cur.execute(query)
+            update_time = cur.fetchone()
+        return update_time
+    except pymysql.err.OperationalError:
+        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+        exit(1)
+
 
 
 def get_last_update_local():
@@ -72,6 +118,28 @@ def get_last_update_local():
         with open(CSV_UPDATE_TIME, "w") as file:
             file.write('dbname,update_time\n')
         return None
+
+
+def _update_local_db(update_time):
+    """
+    Saves new update time for meta table, creating corresponding row if needed.
+
+    :param update_time: Datetime.datetime, time of last update for meta table
+    :return: None
+    """
+    query = ("insert into Sources(dbname, update_time) values('meta', %s)\n"
+             "on duplicate key update update_time = %s"
+             )
+    try:
+        conn = toolforge.toolsdb(DATABASE_NAME)
+        with conn.cursor() as cur:
+            time = update_time.strftime('%Y-%m-%d %H:%M:%S')
+            cur.execute(query, [time, time])
+        conn.commit()
+        conn.close()
+    except pymysql.err.OperationalError:
+        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+        exit(1)
 
 
 def update_local_db(update_time):
@@ -94,6 +162,7 @@ def update_checker():
     wiki_db_update_time = get_creation_date_from_db()
     print('Wikiprojects update checker: time of last update fetched from database')
     local_db_update_time = get_last_update_local()
+    get_last_update_local_db()
     print('Wikiprojects update checker: local time of last update fetched')
     if local_db_update_time is not None:
         if wiki_db_update_time == local_db_update_time:
@@ -102,9 +171,12 @@ def update_checker():
 
     db_info = get_wikipages_from_db()
     print('Wikiprojects update checker: wikilinks info fetched from db')
+    save_links_to_db(db_info)
+    print('Wikiprojects update checker: wikipages links updated in db')
     save_links_to_csv(db_info)
     print('Wikiprojects update checker: wikipages links updated')
     update_local_db(wiki_db_update_time)
+    _update_local_db(wiki_db_update_time)
     print('Wikiprojects update checker: update finished')
 
 
