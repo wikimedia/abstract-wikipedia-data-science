@@ -264,10 +264,7 @@ def get_missed_contents(wikis):
 
     print("Started loading missed contents...")
 
-    ## Get the dbname, wiki mapping
     db_map, placeholders = get_db_map(wikis=wikis)
-
-    ## Get the pageids of missed pages for the current set of wikis
     query = ("select page_id, dbname from Scripts where dbname in (%s) and in_api=1 and is_missed=1" % placeholders)
     
     try:
@@ -283,6 +280,23 @@ def get_missed_contents(wikis):
     df['wiki'] = df['dbname'].map(db_map)
     get_pages(df)
     print("Done loading missed pages!")
+
+def remove_missed_contents(wikis):
+    
+    db_map, placeholders = get_db_map(wikis=wikis)
+    query = ("delete from Scripts where dbname in (%s) and in_api=1 and is_missed=1" % placeholders)
+    
+    try:
+        conn = toolforge.toolsdb(DATABASE_NAME)
+        with conn.cursor() as cur:
+            cur.execute(query, list(db_map.keys()))
+        conn.commit()
+        conn.close()
+    except pymysql.err.OperationalError as err:
+        print(err)
+        exit(1)
+    
+    print('Removed redundant rows.')
 
 
 if __name__ == "__main__":
@@ -313,4 +327,5 @@ if __name__ == "__main__":
     wikis = get_wiki_list(start_idx, end_idx)
     get_contents(wikis)
     get_missed_contents(wikis=wikis)
+    remove_missed_contents(wikis)
     
