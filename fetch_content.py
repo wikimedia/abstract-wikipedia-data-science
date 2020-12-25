@@ -52,8 +52,11 @@ def save_content(wiki, data_list):
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError as err:
-        print(err)
+        print('Failure: please use only in Toolforge environment')
         exit(1)
+    except Exception as err:
+        print('Error saving pages from',wiki)
+        print(err)
 
 
 def save_missed_content(wiki, missed):
@@ -75,7 +78,7 @@ def save_missed_content(wiki, missed):
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError as err:
-        print(err)
+        print('Failure: please use only in Toolforge environment')
         exit(1)
 
 
@@ -200,7 +203,7 @@ def get_db_map(wikis=[], dbs=[]):
             db_map = {data[0]:data[1] for data in cur}
         conn.close()
     except pymysql.err.OperationalError as err:
-        print(err)
+        print('Failure: please use only in Toolforge environment')
         exit(1)
     
     return db_map, placeholders
@@ -274,7 +277,7 @@ def get_missed_contents(wikis):
             df = pd.DataFrame(cur, columns=['page_id', 'dbname'])
         conn.close()
     except pymysql.err.OperationalError as err:
-        print(err)
+        print('Failure: please use only in Toolforge environment')
         exit(1)
 
     df['wiki'] = df['dbname'].map(db_map)
@@ -293,7 +296,7 @@ def remove_missed_contents(wikis):
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError as err:
-        print(err)
+        print('Failure: please use only in Toolforge environment')
         exit(1)
     
     print('Removed redundant rows.')
