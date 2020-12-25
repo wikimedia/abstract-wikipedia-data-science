@@ -33,6 +33,19 @@ def get_only_db_pages():
         print('Failure: please use only in Toolforge environment')
         exit(1)
 
+def remove_redundant():
+    try:
+        conn = toolforge.toolsdb(DATABASE_NAME)
+        with conn.cursor() as cur:
+            SQL_Query = pd.read_sql_query("delete from Scripts where in_api = 0 and in_database = 1", conn)
+            SQL_Query = pd.read_sql_query("delete from Scripts where in_api = 0 and in_database = 1", conn)
+        conn.commit()
+        conn.close()
+        return df
+    except pymysql.err.OperationalError:
+        print('Failure: please use only in Toolforge environment')
+        exit(1)
+
 if __name__ == "__main__":
     df = get_only_db_pages()
     get_pages(df)
