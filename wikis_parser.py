@@ -29,6 +29,7 @@ def get_wikipages_from_db(meta_port=None, user=None, password=None):
     else:
         conn = toolforge.connect('meta')
     with conn.cursor() as cur:
+        cur.execute("use meta_p;")
         cur.execute(query)
         return cur.fetchall()
 
@@ -50,6 +51,7 @@ def get_creation_date_from_db(meta_port=None, user=None, password=None):
         else:
             conn = toolforge.connect('meta')
         with conn.cursor() as cur:
+            cur.execute("use meta_p;")
             cur.execute(query)
             return cur.fetchone()[0]
     except pymysql.err.OperationalError:
