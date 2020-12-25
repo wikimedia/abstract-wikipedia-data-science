@@ -12,7 +12,7 @@ CSV_UPDATE_TIME = 'update_time.csv'
 DATABASE_NAME = 's54588__data'
 
 
-def get_wikipages_from_db():
+def get_wikipages_from_db(meta_port=None, user=None, password=None):
     """
     Requests all names of the databases and linked urls for all working Wikimedia projects.
 
@@ -23,7 +23,11 @@ def get_wikipages_from_db():
              "    from wiki\n"
              "    where is_closed = 0")
 
-    conn = toolforge.connect('meta')  # TODO - connect through port to meta
+    if meta_port:
+        conn = pymysql.connect(host='127.0.0.1', port=meta_port,
+                               user=user, password=password)
+    else:
+        conn = toolforge.connect('meta')
     with conn.cursor() as cur:
         cur.execute(query)
         return cur.fetchall()
@@ -53,7 +57,7 @@ def get_creation_date_from_db(meta_port=None, user=None, password=None):
         exit(1)
 
 
-def save_links_to_db(entries):
+def save_links_to_db(entries, sources_port=None, user=None, password=None):
     """
     Saves links and dbnames to the local project database.
 
@@ -63,7 +67,11 @@ def save_links_to_db(entries):
     query = ("insert into Sources(dbname, url) values(%s, %s)\n"
              "on duplicate key update url = %s")
     try:
-        conn = toolforge.toolsdb(DATABASE_NAME)  # TODO - connect through port to user db
+        if sources_port:
+            conn = pymysql.connect(host='127.0.0.1', port=sources_port,
+                                   user=user, password=password)
+        else:
+            conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
             for elem in entries:
                 cur.execute(query, [elem[0], elem[1], elem[1]])
@@ -85,7 +93,7 @@ def save_links_to_csv(entries):
     entries_df.to_csv(CSV_LINKS, mode='w', header=True, index=False)
 
 
-def get_last_update_local_db():
+def get_last_update_local_db(sources_port=None, user=None, password=None):
     """
     Looks into csv with last update times and fetches last update time for meta table, if it is stored.
     If such file doesn't exits, creates it.
@@ -98,7 +106,11 @@ def get_last_update_local_db():
     update_time = None
 
     try:
-        conn = toolforge.toolsdb(DATABASE_NAME)  # TODO - connect through port to user db
+        if sources_port:
+            conn = pymysql.connect(host='127.0.0.1', port=sources_port,
+                                   user=user, password=password)
+        else:
+            conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
             cur.execute(query)
             update_time = cur.fetchone()
@@ -127,7 +139,7 @@ def get_last_update_local():
         return None
 
 
-def _update_local_db(update_time):
+def _update_local_db(update_time, sources_port=None, user=None, password=None):
     """
     Saves new update time for meta table, creating corresponding row if needed.
 
@@ -138,7 +150,11 @@ def _update_local_db(update_time):
              "on duplicate key update update_time = %s"
              )
     try:
-        conn = toolforge.toolsdb(DATABASE_NAME)  # TODO - connect through port to user db
+        if sources_port:
+            conn = pymysql.connect(host='127.0.0.1', port=sources_port,
+                                   user=user, password=password)
+        else:
+            conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
             time = update_time.strftime('%Y-%m-%d %H:%M:%S')
             cur.execute(query, [time, time])
@@ -166,24 +182,24 @@ def update_local_db(update_time):
 
 
 def update_checker(meta_port=None, sources_port=None, user=None, password=None):
-    wiki_db_update_time = get_creation_date_from_db()
+    wiki_db_update_time = get_creation_date_from_db(meta_port, user, password)
     print('Wikiprojects update checker: time of last update fetched from database')
     local_db_update_time = get_last_update_local()
-    get_last_update_local_db()
+    get_last_update_local_db(sources_port, user, password)
     print('Wikiprojects update checker: local time of last update fetched')
     if local_db_update_time is not None:
         if wiki_db_update_time == local_db_update_time:
             print('Wikiprojects update checker: update not needed')
             return
 
-    db_info = get_wikipages_from_db()
+    db_info = get_wikipages_from_db(meta_port, user, password)
     print('Wikiprojects update checker: wikilinks info fetched from db')
-    save_links_to_db(db_info)
+    save_links_to_db(db_info, sources_port, user, password)
     print('Wikiprojects update checker: wikipages links updated in db')
     save_links_to_csv(db_info)
     print('Wikiprojects update checker: wikipages links updated')
     update_local_db(wiki_db_update_time)
-    _update_local_db(wiki_db_update_time)
+    _update_local_db(wiki_db_update_time, sources_port, user, password)
     print('Wikiprojects update checker: update finished')
 
 
