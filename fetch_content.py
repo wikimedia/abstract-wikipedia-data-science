@@ -29,13 +29,13 @@ def get_wiki_list(start_idx, end_idx):
         exit(1)
 
 
-def save_content(wiki, data_list):
+def save_content(wiki, data_list, in_api, in_database):
 
     data_df = pd.DataFrame(data_list, columns=['id', 'title', 'url', 'length', 'content', 'content_model', 'touched', 'lastrevid'])
 
-    query = ("insert into Scripts(dbname, page_id, title, sourcecode, touched, in_api, length, content_model, lastrevid, url) "
-             "             values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)\n"
-             "on duplicate key update title = %s, sourcecode = %s, touched = %s, in_api = %s, "
+    query = ("insert into Scripts(dbname, page_id, title, sourcecode, touched, in_api, in_database, length, content_model, lastrevid, url) "
+             "             values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)\n"
+             "on duplicate key update title = %s, sourcecode = %s, touched = %s, in_api = %s, in_database = %s,"
              "length = %s, content_model = %s, lastrevid = %s, url = %s, is_missed=%s"
              )
     try:
@@ -47,8 +47,8 @@ def save_content(wiki, data_list):
                 time = elem['touched'].replace('T', ' ').replace('Z', ' ')
                 cur.execute(query,
                             [dbname, elem['id'], 
-                            elem['title'], elem['content'], time, 1, elem['length'], elem['content_model'], elem['lastrevid'], elem['url'],
-                            elem['title'], elem['content'], time, 1, elem['length'], elem['content_model'], elem['lastrevid'], elem['url'], 0])
+                            elem['title'], elem['content'], time, in_api, in_database, elem['length'], elem['content_model'], elem['lastrevid'], elem['url'],
+                            elem['title'], elem['content'], time, in_api, in_database, elem['length'], elem['content_model'], elem['lastrevid'], elem['url'], 0])
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError as err:
@@ -165,7 +165,7 @@ def get_contents(wikis, revise=False):
                 cnt_data_list += len(data_list)
                 cnt_missed += len(missed)
                 save_missed_content(wiki, missed)
-                save_content(wiki, data_list)
+                save_content(wiki, data_list, 1, 0)
                 print(cnt_data_list, 'pages loaded...')
                 data_list, missed = [], []
 
@@ -209,7 +209,7 @@ def get_db_map(wikis=[], dbs=[]):
     return db_map, placeholders
 
 
-def get_pages(df):
+def get_pages(df, in_api, in_database):
     '''
     df columns: page_id, dbname, wiki
     dbname not required
@@ -257,7 +257,7 @@ def get_pages(df):
                 missed.append([pageid])
                 print("Miss:", pageid, "from wiki:", wiki, "\n", err)
 
-        save_content(wiki, data_list)
+        save_content(wiki, data_list, in_api, in_database)
         save_missed_content(wiki, missed)
         print("All pages loaded for %s. Missed: %d, Loaded: %d" \
             %(wiki, len(missed), len(data_list)))
@@ -281,25 +281,8 @@ def get_missed_contents(wikis):
         exit(1)
 
     df['wiki'] = df['dbname'].map(db_map)
-    get_pages(df)
+    get_pages(df, 1, 0)
     print("Done loading missed pages!")
-
-def remove_missed_contents(wikis):
-    
-    db_map, placeholders = get_db_map(wikis=wikis)
-    query = ("delete from Scripts where dbname in (%s) and in_api=1 and is_missed=1" % placeholders)
-    
-    try:
-        conn = toolforge.toolsdb(DATABASE_NAME)
-        with conn.cursor() as cur:
-            cur.execute(query, list(db_map.keys()))
-        conn.commit()
-        conn.close()
-    except pymysql.err.OperationalError as err:
-        print('Failure: please use only in Toolforge environment')
-        exit(1)
-    
-    print('Removed redundant rows.')
 
 
 if __name__ == "__main__":
@@ -329,6 +312,4 @@ if __name__ == "__main__":
     
     wikis = get_wiki_list(start_idx, end_idx)
     get_contents(wikis)
-    get_missed_contents(wikis=wikis)
-    remove_missed_contents(wikis)
-    
+    get_missed_contents(wikis=wikis)    
