@@ -1,12 +1,16 @@
+## imports
 import toolforge
 import pymysql.err
+import pymysql
 import pandas as pd
 import os.path
+import argparse
 
 CSV_LINKS = 'wikipages.csv'
 CSV_UPDATE_TIME = 'update_time.csv'
 
 DATABASE_NAME = 's54588__data'
+
 
 def get_wikipages_from_db():
     """
@@ -19,13 +23,13 @@ def get_wikipages_from_db():
              "    from wiki\n"
              "    where is_closed = 0")
 
-    conn = toolforge.connect('meta')
+    conn = toolforge.connect('meta')  # TODO - connect through port to meta
     with conn.cursor() as cur:
         cur.execute(query)
         return cur.fetchall()
 
 
-def get_creation_date_from_db():
+def get_creation_date_from_db(meta_port=None, user=None, password=None):
     """
     Requests date of the creation of the meta table (which seems to be the date of the update).
 
@@ -36,7 +40,11 @@ def get_creation_date_from_db():
              "    from INFORMATION_SCHEMA.TABLES\n"
              "    where table_name = 'wiki'")
     try:
-        conn = toolforge.connect('meta')
+        if meta_port:
+            conn = pymysql.connect(host='127.0.0.1', port=meta_port,
+                                   user=user, password=password)
+        else:
+            conn = toolforge.connect('meta')
         with conn.cursor() as cur:
             cur.execute(query)
             return cur.fetchone()[0]
@@ -53,9 +61,9 @@ def save_links_to_db(entries):
     :return: None
     """
     query = ("insert into Sources(dbname, url) values(%s, %s)\n"
-         "on duplicate key update url = %s")
+             "on duplicate key update url = %s")
     try:
-        conn = toolforge.toolsdb(DATABASE_NAME)
+        conn = toolforge.toolsdb(DATABASE_NAME)  # TODO - connect through port to user db
         with conn.cursor() as cur:
             for elem in entries:
                 cur.execute(query, [elem[0], elem[1], elem[1]])
@@ -90,7 +98,7 @@ def get_last_update_local_db():
     update_time = None
 
     try:
-        conn = toolforge.toolsdb(DATABASE_NAME)
+        conn = toolforge.toolsdb(DATABASE_NAME)  # TODO - connect through port to user db
         with conn.cursor() as cur:
             cur.execute(query)
             update_time = cur.fetchone()
@@ -98,7 +106,6 @@ def get_last_update_local_db():
     except pymysql.err.OperationalError:
         print('Wikiprojects update checker: failure, please use only in Toolforge environment')
         exit(1)
-
 
 
 def get_last_update_local():
@@ -131,7 +138,7 @@ def _update_local_db(update_time):
              "on duplicate key update update_time = %s"
              )
     try:
-        conn = toolforge.toolsdb(DATABASE_NAME)
+        conn = toolforge.toolsdb(DATABASE_NAME)  # TODO - connect through port to user db
         with conn.cursor() as cur:
             time = update_time.strftime('%Y-%m-%d %H:%M:%S')
             cur.execute(query, [time, time])
@@ -158,7 +165,7 @@ def update_local_db(update_time):
         update_time_df.to_csv(CSV_UPDATE_TIME, mode='a', header=False, index=False)
 
 
-def update_checker():
+def update_checker(meta_port=None, sources_port=None, user=None, password=None):
     wiki_db_update_time = get_creation_date_from_db()
     print('Wikiprojects update checker: time of last update fetched from database')
     local_db_update_time = get_last_update_local()
@@ -181,4 +188,21 @@ def update_checker():
 
 
 if __name__ == '__main__':
-    update_checker()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--local", "-l", action="store_true",
+                        help="Connection is initiated from local pc.")
+    local_data = parser.add_argument_group(title="Info for connecting to Toolforge from local pc.")
+    local_data.add_argument("--meta-port", "-m", type=int,
+                            help="Port for connecting to meta table through ssh tunneling, if used.")
+    local_data.add_argument("--sources-port", "-s", type=int,
+                            help="Port for connecting to local Sources table through ssh tunneling, if used.")
+    local_data.add_argument("--user", "-u", type=str,
+                            help="Toolforge username of the tool.")
+    local_data.add_argument("--password", "-p", type=str,
+                            help="Toolforge password of the tool.")
+    args = parser.parse_args()
+
+    if not args.local:
+        update_checker()
+    else:
+        update_checker(args.meta_port, args.sources_port, args.user, args.password)
