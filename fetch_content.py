@@ -115,7 +115,7 @@ def get_contents(wikis, revise=False):
             params = {'action':'query',
                     'generator':'allpages',
                     'gapnamespace':828,
-                    'gaplimit':'max',
+                    'gaplimit':300,
                     'format':'json',
                     'prop':'info',
                     'inprop':'url',
