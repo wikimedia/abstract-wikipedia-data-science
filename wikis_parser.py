@@ -6,8 +6,6 @@ import pandas as pd
 import os.path
 import argparse
 
-CSV_LINKS = 'wikipages.csv'
-CSV_UPDATE_TIME = 'update_time.csv'
 
 DATABASE_NAME = 's54588__data'
 
@@ -85,17 +83,6 @@ def save_links_to_db(entries, sources_port=None, user=None, password=None):
         exit(1)
 
 
-def save_links_to_csv(entries):
-    """
-    Creates file with 'dbname - url' pairs and saves them here in csv format.
-
-    :param entries: List(tuple) of lists(tuples), with pairs 'dbname - url'
-    :return: None
-    """
-    entries_df = pd.DataFrame(entries, columns=['dbname', 'url'])
-    entries_df.to_csv(CSV_LINKS, mode='w', header=True, index=False)
-
-
 def get_last_update_local_db(sources_port=None, user=None, password=None):
     """
     Looks into csv with last update times and fetches last update time for meta table, if it is stored.
@@ -124,26 +111,7 @@ def get_last_update_local_db(sources_port=None, user=None, password=None):
         exit(1)
 
 
-def get_last_update_local():
-    """
-    Looks into csv with last update times and fetches last update time for meta table, if it is stored.
-    If such file doesn't exits, creates it.
-
-    :return: Datetime.datetime of last update or None
-    """
-    if os.path.exists(CSV_UPDATE_TIME):
-        df = pd.read_csv(CSV_UPDATE_TIME)
-        if 'meta' in df.values:
-            update_time = df.loc[df['dbname'] == 'meta', 'update_time'].iloc[0]
-            return update_time
-        return None
-    else:
-        with open(CSV_UPDATE_TIME, "w") as file:
-            file.write('dbname,update_time\n')
-        return None
-
-
-def _update_local_db(update_time, sources_port=None, user=None, password=None):
+def update_local_db(update_time, sources_port=None, user=None, password=None):
     """
     Saves new update time for meta table, creating corresponding row if needed.
 
@@ -170,27 +138,11 @@ def _update_local_db(update_time, sources_port=None, user=None, password=None):
         exit(1)
 
 
-def update_local_db(update_time):
-    """
-    Saves new update time for meta table, creating corresponding row if needed.
-
-    :param update_time: Datetime.datetime, time of last update for meta table
-    :return: None
-    """
-    df = pd.read_csv(CSV_UPDATE_TIME)
-    if 'meta' in df.values:
-        df.loc[df['dbname'] == 'meta', 'update_time'] = update_time
-        df.to_csv(CSV_UPDATE_TIME, mode='w', header=True, index=False)
-    else:
-        update_time_df = pd.DataFrame([['meta', update_time]], columns=['dbname', 'update_time'])
-        update_time_df.to_csv(CSV_UPDATE_TIME, mode='a', header=False, index=False)
-
 
 def update_checker(meta_port=None, sources_port=None, user=None, password=None):
     wiki_db_update_time = get_creation_date_from_db(meta_port, user, password)
     print('Wikiprojects update checker: time of last update fetched from database')
-    local_db_update_time = get_last_update_local()
-    get_last_update_local_db(sources_port, user, password)
+    local_db_update_time = get_last_update_local_db(sources_port, user, password)
     print('Wikiprojects update checker: local time of last update fetched')
     if local_db_update_time is not None:
         if wiki_db_update_time == local_db_update_time:
@@ -201,10 +153,7 @@ def update_checker(meta_port=None, sources_port=None, user=None, password=None):
     print('Wikiprojects update checker: wikilinks info fetched from db')
     save_links_to_db(db_info, sources_port, user, password)
     print('Wikiprojects update checker: wikipages links updated in db')
-    save_links_to_csv(db_info)
-    print('Wikiprojects update checker: wikipages links updated')
-    update_local_db(wiki_db_update_time)
-    _update_local_db(wiki_db_update_time, sources_port, user, password)
+    update_local_db(wiki_db_update_time, sources_port, user, password)
     print('Wikiprojects update checker: update finished')
 
 
