@@ -73,6 +73,7 @@ def save_links_to_db(entries, sources_port=None, user=None, password=None):
         else:
             conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
+            cur.execute("use " + DATABASE_NAME)
             for elem in entries:
                 cur.execute(query, [elem[0], elem[1], elem[1]])
         conn.commit()
@@ -112,6 +113,7 @@ def get_last_update_local_db(sources_port=None, user=None, password=None):
         else:
             conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
+            cur.execute("use " + DATABASE_NAME)
             cur.execute(query)
             update_time = cur.fetchone()
         return update_time
@@ -157,6 +159,7 @@ def _update_local_db(update_time, sources_port=None, user=None, password=None):
             conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
             time = update_time.strftime('%Y-%m-%d %H:%M:%S')
+            cur.execute("use " + DATABASE_NAME)
             cur.execute(query, [time, time])
         conn.commit()
         conn.close()
