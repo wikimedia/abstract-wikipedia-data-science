@@ -2,8 +2,6 @@
 import toolforge
 import pymysql.err
 import pymysql
-import pandas as pd
-import os.path
 import argparse
 
 
@@ -14,6 +12,9 @@ def get_wikipages_from_db(meta_port=None, user=None, password=None):
     """
     Requests all names of the databases and linked urls for all working Wikimedia projects.
 
+    :param meta_port: Port for connecting to meta table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
     :return: ((dbname1, url1), (dbname2, url2),...)
     """
     query = ("\n"
@@ -36,6 +37,9 @@ def get_creation_date_from_db(meta_port=None, user=None, password=None):
     """
     Requests date of the creation of the meta table (which seems to be the date of the update).
 
+    :param meta_port: Port for connecting to meta table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
     :return: Datetime.datetime
     """
     query = ("\n"
@@ -51,7 +55,8 @@ def get_creation_date_from_db(meta_port=None, user=None, password=None):
         with conn.cursor() as cur:
             cur.execute("use meta_p;")
             cur.execute(query)
-            return cur.fetchone()[0]
+            time = cur.fetchone()[0]
+            return time
     except pymysql.err.OperationalError:
         print('Wikiprojects update checker: failure, please use only in Toolforge environment')
         exit(1)
@@ -62,6 +67,9 @@ def save_links_to_db(entries, sources_port=None, user=None, password=None):
     Saves links and dbnames to the local project database.
 
     :param entries: List(tuple) of lists(tuples), with pairs 'dbname - url'
+    :param sources_port: Port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
     :return: None
     """
     query = ("insert into Sources(dbname, url) values(%s, %s)\n"
@@ -85,9 +93,12 @@ def save_links_to_db(entries, sources_port=None, user=None, password=None):
 
 def get_last_update_local_db(sources_port=None, user=None, password=None):
     """
-    Looks into csv with last update times and fetches last update time for meta table, if it is stored.
+    Looks into database with last update times and fetches last update time for meta table, if it is stored.
     If such file doesn't exits, creates it.
 
+    :param sources_port: Port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
     :return: Datetime.datetime of last update or None
     """
     query = ("select update_time\n"
@@ -104,8 +115,8 @@ def get_last_update_local_db(sources_port=None, user=None, password=None):
         with conn.cursor() as cur:
             cur.execute("use " + DATABASE_NAME)
             cur.execute(query)
-            update_time = cur.fetchone()
-        return update_time
+            update_time = cur.fetchone()[0]
+            return update_time
     except pymysql.err.OperationalError:
         print('Wikiprojects update checker: failure, please use only in Toolforge environment')
         exit(1)
@@ -116,6 +127,9 @@ def update_local_db(update_time, sources_port=None, user=None, password=None):
     Saves new update time for meta table, creating corresponding row if needed.
 
     :param update_time: Datetime.datetime, time of last update for meta table
+    :param sources_port: Port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
     :return: None
     """
     query = ("insert into Sources(dbname, update_time) values('meta', %s)\n"
@@ -138,7 +152,6 @@ def update_local_db(update_time, sources_port=None, user=None, password=None):
         exit(1)
 
 
-
 def update_checker(meta_port=None, sources_port=None, user=None, password=None):
     wiki_db_update_time = get_creation_date_from_db(meta_port, user, password)
     print('Wikiprojects update checker: time of last update fetched from database')
@@ -158,7 +171,13 @@ def update_checker(meta_port=None, sources_port=None, user=None, password=None):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="Updates wiki info stored in database in Toolforge. "
+                    "To use from local PC, use flag --local and all the additional flags needed for Ad"
+                    "establishing connection through ssh tunneling."
+                    "More help available at "
+                    "https://wikitech.wikimedia.org/wiki/Help:Toolforge/Database#SSH_tunneling_for_local_testing_which_makes_use_of_Wiki_Replica_databases"
+    )
     parser.add_argument("--local", "-l", action="store_true",
                         help="Connection is initiated from local pc.")
     local_data = parser.add_argument_group(title="Info for connecting to Toolforge from local pc.")
