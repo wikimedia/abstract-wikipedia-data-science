@@ -25,7 +25,7 @@ def get_wiki_list(start_idx, end_idx):
         conn.close()
         return ret
     except pymysql.err.OperationalError:
-        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+        print('Failure: please use only in Toolforge environment')
         exit(1)
 
 
@@ -36,7 +36,7 @@ def save_content(wiki, data_list):
     query = ("insert into Scripts(dbname, page_id, title, sourcecode, touched, in_api, length, content_model, lastrevid, url) "
              "             values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)\n"
              "on duplicate key update title = %s, sourcecode = %s, touched = %s, in_api = %s, "
-             "length = %s, content_model = %s, lastrevid = %s, url = %s"
+             "length = %s, content_model = %s, lastrevid = %s, url = %s, is_missed=%s"
              )
     try:
         conn = toolforge.toolsdb(DATABASE_NAME)
@@ -48,7 +48,7 @@ def save_content(wiki, data_list):
                 cur.execute(query,
                             [dbname, elem['id'], 
                             elem['title'], elem['content'], time, 1, elem['length'], elem['content_model'], elem['lastrevid'], elem['url'],
-                            elem['title'], elem['content'], time, 1, elem['length'], elem['content_model'], elem['lastrevid'], elem['url']])
+                            elem['title'], elem['content'], time, 1, elem['length'], elem['content_model'], elem['lastrevid'], elem['url'], 0])
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError as err:
@@ -178,18 +178,25 @@ def get_contents(wikis, revise=False):
     print("Done loading!")
 
 
-def get_db_map(wikis):
+def get_db_map(wikis=[], dbs=[]):
     
-    placeholders = ','.join('%s' for _ in wikis)
-
-    query = ("select dbname, url from Sources where url in (%s)" % placeholders)
+    query_input = []
+    
+    if len(wikis)>0:
+        placeholders = ','.join('%s' for _ in wikis)
+        query_input = wikis
+        query = ("select dbname, url from Sources where url in (%s)" % placeholders)
+    else:
+        placeholders = ','.join('%s' for _ in dbs)
+        query_input = dbs
+        query = ("select dbname, url from Sources where dbname in (%s)" % placeholders)
     
     db_map = {}
 
     try:
         conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
-            cur.execute(query,wikis)
+            cur.execute(query,query_input)
             db_map = {data[0]:data[1] for data in cur}
         conn.close()
     except pymysql.err.OperationalError as err:
@@ -199,29 +206,12 @@ def get_db_map(wikis):
     return db_map, placeholders
 
 
-def get_missed_contents(wikis):
-
-    print("Started loading missed contents...")
+def get_pages(df):
+    '''
+    df columns: page_id, dbname, wiki
+    dbname not required
+    '''
     user_agent = toolforge.set_user_agent('abstract-wiki-ds')
-
-    ## Get the dbname, wiki mapping
-    db_map, placeholders = get_db_map(wikis)
-
-    ## Get the pageids of missed pages for the current set of wikis
-    query = ("select page_id, dbname from Scripts where dbname in (%s) and in_api=1 and is_missed=1" % placeholders)
-    
-    try:
-        conn = toolforge.toolsdb(DATABASE_NAME)
-        with conn.cursor() as cur:
-            cur.execute(query, list(db_map.keys()))
-            df = pd.DataFrame(cur, columns=['pageid', 'dbname'])
-        conn.close()
-    except pymysql.err.OperationalError as err:
-        print(err)
-        exit(1)
-
-    df['wiki'] = df['dbname'].map(db_map)
-    
     for wiki, w_df in df.groupby('wiki'):
         try:
             session = mwapi.Session(wiki, user_agent=user_agent)
@@ -229,7 +219,7 @@ def get_missed_contents(wikis):
             print("Failed to connect to", wiki, "\n", e)
             continue
             
-        pageids = w_df['pageid'].values
+        pageids = w_df['page_id'].values
         data_list = []
         missed = []
         
@@ -269,6 +259,29 @@ def get_missed_contents(wikis):
         print("All pages loaded for %s. Missed: %d, Loaded: %d" \
             %(wiki, len(missed), len(data_list)))
 
+
+def get_missed_contents(wikis):
+
+    print("Started loading missed contents...")
+
+    ## Get the dbname, wiki mapping
+    db_map, placeholders = get_db_map(wikis=wikis)
+
+    ## Get the pageids of missed pages for the current set of wikis
+    query = ("select page_id, dbname from Scripts where dbname in (%s) and in_api=1 and is_missed=1" % placeholders)
+    
+    try:
+        conn = toolforge.toolsdb(DATABASE_NAME)
+        with conn.cursor() as cur:
+            cur.execute(query, list(db_map.keys()))
+            df = pd.DataFrame(cur, columns=['page_id', 'dbname'])
+        conn.close()
+    except pymysql.err.OperationalError as err:
+        print(err)
+        exit(1)
+
+    df['wiki'] = df['dbname'].map(db_map)
+    get_pages(df)
     print("Done loading missed pages!")
 
 

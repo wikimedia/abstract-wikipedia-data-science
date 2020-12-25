@@ -18,8 +18,9 @@ def compare_with_saved_by_db():
 
             cur.execute("select count(*) from Scripts where in_api = 0 and in_database = 1")
             print("DB info: Entries captured from database, but not from api: ", cur.fetchone()[0])
+        conn.close()
     except pymysql.err.OperationalError:
-        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+        print('Failure: please use only in Toolforge environment')
         exit(1)
 
 

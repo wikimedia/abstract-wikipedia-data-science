@@ -19,7 +19,7 @@ def save_to_db(entries, db):
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError:
-        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+        print('Failure: please use only in Toolforge environment')
         exit(1)
 
 
