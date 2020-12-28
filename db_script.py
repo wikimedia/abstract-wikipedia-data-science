@@ -83,8 +83,8 @@ def get_data(dbs, replicas_port=None, user_db_port=None, user=None, password=Non
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Updates wiki info stored in database in Toolforge. "
-                    "To use from local PC, use flag --local and all the additional flags needed for Ad"
+        description="Updates Lua scripts in database in Toolforge, fetching info from database replicas. "
+                    "To use from local PC, use flag --local and all the additional flags needed for "
                     "establishing connection through ssh tunneling."
                     "More help available at "
                     "https://wikitech.wikimedia.org/wiki/Help:Toolforge/Database#SSH_tunneling_for_local_testing_which_makes_use_of_Wiki_Replica_databases"
@@ -95,7 +95,8 @@ if __name__ == "__main__":
     local_data.add_argument("--replicas-port", "-r", type=int,
                             help="Port for connecting to meta table through ssh tunneling, if used.")
     local_data.add_argument("--user-db-port", "-udb", type=int,
-                            help="Port for connecting to local Sources table through ssh tunneling, if used.")
+                            help="Port for connecting to tables, created by user in Toolforge, "
+                                 "through ssh tunneling, if used.")
     local_data.add_argument("--user", "-u", type=str,
                             help="Toolforge username of the tool.")
     local_data.add_argument("--password", "-p", type=str,
