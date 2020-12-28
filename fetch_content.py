@@ -316,8 +316,6 @@ if __name__ == "__main__":
     parser.add_argument("--local", "-l", action="store_true",
                         help="Connection is initiated from local pc.")
     local_data = parser.add_argument_group(title="Info for connecting to Toolforge from local pc.")
-    local_data.add_argument("--replicas-port", "-r", type=int,
-                            help="Port for connecting to meta table through ssh tunneling, if used.")
     local_data.add_argument("--user-db-port", "-udb", type=int,
                             help="Port for connecting to tables, created by user in Toolforge, "
                                  "through ssh tunneling, if used.")
