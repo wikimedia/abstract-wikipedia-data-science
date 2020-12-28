@@ -58,7 +58,7 @@ def get_creation_date_from_db(meta_port=None, user=None, password=None):
             time = cur.fetchone()[0]
             return time
     except pymysql.err.OperationalError:
-        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+        print('Wikiprojects update checker: failure, please establish connection to Toolforge')
         exit(1)
 
 
@@ -87,7 +87,7 @@ def save_links_to_db(entries, sources_port=None, user=None, password=None):
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError:
-        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+        print('Wikiprojects update checker: failure, please establish connection to Toolforge')
         exit(1)
 
 
@@ -118,7 +118,7 @@ def get_last_update_local_db(sources_port=None, user=None, password=None):
             update_time = cur.fetchone()[0]
             return update_time
     except pymysql.err.OperationalError:
-        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+        print('Wikiprojects update checker: failure, please establish connection to Toolforge')
         exit(1)
 
 
@@ -148,7 +148,7 @@ def update_local_db(update_time, sources_port=None, user=None, password=None):
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError:
-        print('Wikiprojects update checker: failure, please use only in Toolforge environment')
+        print('Wikiprojects update checker: failure, please establish connection to Toolforge')
         exit(1)
 
 
