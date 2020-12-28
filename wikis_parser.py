@@ -1,8 +1,9 @@
 ## imports
-import toolforge
 import pymysql.err
 import pymysql
 import argparse
+
+import utils.db_access as db_acc
 
 
 DATABASE_NAME = 's54588__data'
@@ -22,13 +23,8 @@ def get_wikipages_from_db(meta_port=None, user=None, password=None):
              "    from wiki\n"
              "    where is_closed = 0")
 
-    if meta_port:
-        conn = pymysql.connect(host='127.0.0.1', port=meta_port,
-                               user=user, password=password)
-    else:
-        conn = toolforge.connect('meta')
+    conn = db_acc.connect_to_replicas_database('meta_p', meta_port, user, password)
     with conn.cursor() as cur:
-        cur.execute("use meta_p;")
         cur.execute(query)
         return cur.fetchall()
 
@@ -47,13 +43,8 @@ def get_creation_date_from_db(meta_port=None, user=None, password=None):
              "    from INFORMATION_SCHEMA.TABLES\n"
              "    where table_name = 'wiki'")
     try:
-        if meta_port:
-            conn = pymysql.connect(host='127.0.0.1', port=meta_port,
-                                   user=user, password=password)
-        else:
-            conn = toolforge.connect('meta')
+        conn = db_acc.connect_to_replicas_database('meta_p', meta_port, user, password)
         with conn.cursor() as cur:
-            cur.execute("use meta_p;")
             cur.execute(query)
             time = cur.fetchone()[0]
             return time
@@ -75,13 +66,8 @@ def save_links_to_db(entries, sources_port=None, user=None, password=None):
     query = ("insert into Sources(dbname, url) values(%s, %s)\n"
              "on duplicate key update url = %s")
     try:
-        if sources_port:
-            conn = pymysql.connect(host='127.0.0.1', port=sources_port,
-                                   user=user, password=password)
-        else:
-            conn = toolforge.toolsdb(DATABASE_NAME)
+        conn = db_acc.connect_to_user_database(DATABASE_NAME, sources_port, user, password)
         with conn.cursor() as cur:
-            cur.execute("use " + DATABASE_NAME)
             for elem in entries:
                 cur.execute(query, [elem[0], elem[1], elem[1]])
         conn.commit()
@@ -107,13 +93,8 @@ def get_last_update_local_db(sources_port=None, user=None, password=None):
     update_time = None
 
     try:
-        if sources_port:
-            conn = pymysql.connect(host='127.0.0.1', port=sources_port,
-                                   user=user, password=password)
-        else:
-            conn = toolforge.toolsdb(DATABASE_NAME)
+        conn = db_acc.connect_to_user_database(DATABASE_NAME, sources_port, user, password)
         with conn.cursor() as cur:
-            cur.execute("use " + DATABASE_NAME)
             cur.execute(query)
             update_time = cur.fetchone()[0]
             return update_time
@@ -136,14 +117,9 @@ def update_local_db(update_time, sources_port=None, user=None, password=None):
              "on duplicate key update update_time = %s"
              )
     try:
-        if sources_port:
-            conn = pymysql.connect(host='127.0.0.1', port=sources_port,
-                                   user=user, password=password)
-        else:
-            conn = toolforge.toolsdb(DATABASE_NAME)
+        conn = db_acc.connect_to_user_database(DATABASE_NAME, sources_port, user, password)
         with conn.cursor() as cur:
             time = update_time.strftime('%Y-%m-%d %H:%M:%S')
-            cur.execute("use " + DATABASE_NAME)
             cur.execute(query, [time, time])
         conn.commit()
         conn.close()
