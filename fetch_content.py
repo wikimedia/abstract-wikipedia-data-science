@@ -306,9 +306,9 @@ if __name__ == "__main__":
                     "More help available at "
                     "https://wikitech.wikimedia.org/wiki/Help:Toolforge/Database#SSH_tunneling_for_local_testing_which_makes_use_of_Wiki_Replica_databases"
     )
-    parser.add_argument("start-idx", type=index_type,
+    parser.add_argument("start_idx", type=index_type,
                         help="Starting index of info, fetched from database Sources, sorted by key (min=0).")
-    parser.add_argument("end-idx", type=index_type,
+    parser.add_argument("end_idx", type=index_type,
                         help="Ending index of info, fetched from database Sources, sorted by key.(min=0)")
     parser.add_argument("--revise", "-rev", action="store_true",
                         help="Whether content should be revised.")
