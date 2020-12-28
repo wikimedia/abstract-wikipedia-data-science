@@ -25,7 +25,7 @@ def save_to_db(entries, db, user_db_port=None, user=None, password=None):
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError:
-        print('Failure: please use only in Toolforge environment')
+        print('Failure: failure, please establish connection to Toolforge')
         exit(1)
 
 
