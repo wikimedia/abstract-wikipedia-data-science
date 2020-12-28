@@ -29,3 +29,16 @@ def get_rev_info(db):
                 "GROUP BY page.page_id"
             )
     return sql_to_df(db, query)
+
+def get_iwl_info(db):
+    query = (
+                "SELECT page.page_id, "
+                "COUNT(iwl.iwl_from) as iwls "
+                "FROM page "
+                "INNER JOIN iwlinks AS iwl "
+                "    ON page.page_id=iwl.iwl_from "
+                "    AND page.page_namespace=828 "
+                "    AND page.page_content_model='Scribunto' "
+                "GROUP BY page.page_id"
+            )
+    return sql_to_df(db, query)
