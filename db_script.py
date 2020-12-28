@@ -19,6 +19,7 @@ def save_to_db(entries, db, user_db_port=None, user=None, password=None):
         else:
             conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
+            cur.execute("use " + DATABASE_NAME)
             for index, elem in entries.iterrows():
                 cur.execute(query,
                             [db, elem['page_id'], elem['page_title'], 1, 1])
@@ -43,7 +44,8 @@ def get_dbs(user_db_port=None, user=None, password=None):
         else:
             conn = toolforge.toolsdb(DATABASE_NAME)
         with conn.cursor() as cur:
-            cur.execute("select dbname from Sources where url is not NULL")    # all, except 'meta'
+            cur.execute("use " + DATABASE_NAME)
+            cur.execute("select dbname from Sources where url is not NULL")  # all, except 'meta'
             ret = [db[0] for db in cur]
         conn.close()
         return ret
@@ -64,7 +66,7 @@ def get_data(dbs, replicas_port=None, user_db_port=None, user=None, password=Non
                 conn = toolforge.connect(dbname=db)
             with conn.cursor() as cur:
                 ## Query
-                cur.execute("USE "+db+'_p')
+                cur.execute("USE " + db + '_p')
                 SQL_Query = pd.read_sql_query("SELECT page_id,page_title FROM page \
                     WHERE page_content_model='Scribunto' AND page_namespace=828", conn)
                 df_page = pd.DataFrame(SQL_Query, columns=['page_id', 'page_title']).applymap(encode_if_necessary)
@@ -74,7 +76,7 @@ def get_data(dbs, replicas_port=None, user_db_port=None, user=None, password=Non
                 print('Finished loading scripts from ', db)
             conn.close()
         except Exception as err:
-                print('Error loading pages from db: ', db, '\nError:', err)
+            print('Error loading pages from db: ', db, '\nError:', err)
 
     print("Done loading from databases.")
 
