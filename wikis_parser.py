@@ -157,10 +157,11 @@ if __name__ == '__main__':
     parser.add_argument("--local", "-l", action="store_true",
                         help="Connection is initiated from local pc.")
     local_data = parser.add_argument_group(title="Info for connecting to Toolforge from local pc.")
-    local_data.add_argument("--meta-port", "-m", type=int,
+    local_data.add_argument("--replicas-port", "-r", type=int,
                             help="Port for connecting to meta table through ssh tunneling, if used.")
-    local_data.add_argument("--sources-port", "-s", type=int,
-                            help="Port for connecting to local Sources table through ssh tunneling, if used.")
+    local_data.add_argument("--user-db-port", "-udb", type=int,
+                            help="Port for connecting to tables, created by user in Toolforge, "
+                                 "through ssh tunneling, if used.")
     local_data.add_argument("--user", "-u", type=str,
                             help="Toolforge username of the tool.")
     local_data.add_argument("--password", "-p", type=str,
@@ -170,4 +171,4 @@ if __name__ == '__main__':
     if not args.local:
         update_checker()
     else:
-        update_checker(args.meta_port, args.sources_port, args.user, args.password)
+        update_checker(args.replicas_port, args.user_db_port, args.user, args.password)
