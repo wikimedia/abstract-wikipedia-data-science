@@ -4,12 +4,14 @@ import mwapi
 import toolforge
 import pandas as pd
 import pymysql
-import datetime
 import numpy as np
+import argparse
+
 
 pymysql.converters.encoders[np.int64] = pymysql.converters.escape_int
 pymysql.converters.conversions = pymysql.converters.encoders.copy()
 pymysql.converters.conversions.update(pymysql.converters.decoders)
+
 
 ## define constants
 MIN_IDX = 0
@@ -285,31 +287,50 @@ def get_missed_contents(wikis):
     print("Done loading missed pages!")
 
 
-if __name__ == "__main__":
-    
-    ## Check arguments for errors
-    if len(sys.argv)<3:
-        sys.exit("Error: Two args required: start and end index. E.g python3 fetch_content.py 1 8.")
-    
-    try:
-        start_idx = int(sys.argv[1])
-        end_idx = int(sys.argv[2])
-    except:
-        sys.exit("Error: Both indices should be integer.")
-    
-    ## Check for optional revise argument
-    revise = False
-    try:
-        revise = sys.argv[3].lower() in ['true', 'yes', 'y', 't']
-    except:
-        pass
-    
-    if start_idx<MIN_IDX or end_idx<MIN_IDX:
-        sys.exit("Error: Indices should be %d or more." %MIN_IDX)
+def index_type(x):
+    x = int(x)
+    if x < MIN_IDX:
+        raise argparse.ArgumentError("Minimum index is 0")
+    return x
 
-    if start_idx>end_idx:
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Updates Lua scripts and their additional info in database in Toolforge, "
+                    "fetching info from Wikimedia API. For testing and parallelization sake, use start-idx and end-idx "
+                    "parameters to choose which wikis from Sources table will be worked with."
+                    "To use from local PC, use flag --local and all the additional flags needed for "
+                    "establishing connection through ssh tunneling."
+                    "More help available at "
+                    "https://wikitech.wikimedia.org/wiki/Help:Toolforge/Database#SSH_tunneling_for_local_testing_which_makes_use_of_Wiki_Replica_databases"
+    )
+    parser.add_argument("start-idx", type=index_type,
+                        help="Starting index of info, fetched from database Sources, sorted by key.")
+    parser.add_argument("end-idx", type=index_type,
+                        help="Ending index of info, fetched from database Sources, sorted by key.")
+    parser.add_argument("--revise", "-rev", action="store_true",
+                        help="Whether content should be revised.")
+
+    parser.add_argument("--local", "-l", action="store_true",
+                        help="Connection is initiated from local pc.")
+    local_data = parser.add_argument_group(title="Info for connecting to Toolforge from local pc.")
+    local_data.add_argument("--replicas-port", "-r", type=int,
+                            help="Port for connecting to meta table through ssh tunneling, if used.")
+    local_data.add_argument("--user-db-port", "-udb", type=int,
+                            help="Port for connecting to tables, created by user in Toolforge, "
+                                 "through ssh tunneling, if used.")
+    local_data.add_argument("--user", "-u", type=str,
+                            help="Toolforge username of the tool.")
+    local_data.add_argument("--password", "-p", type=str,
+                            help="Toolforge password of the tool.")
+    args = parser.parse_args()
+
+    if args.start_idx > args.end_idx:
         sys.exit("Error: Ending index must be greater than start index.")
-    
-    wikis = get_wiki_list(start_idx, end_idx)
-    get_contents(wikis)
-    get_missed_contents(wikis=wikis)    
+
+    if not args.local:
+        wikis = get_wiki_list(args.start_idx, args.end_idx)
+        get_contents(wikis)
+        get_missed_contents(wikis=wikis)
+    else:
+        pass
