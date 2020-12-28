@@ -20,21 +20,8 @@ def get_only_db_pages():
         print('Failure: please use only in Toolforge environment')
         exit(1)
 
-def remove_missed_contents():
-    try:
-        conn = toolforge.toolsdb(DATABASE_NAME)
-        with conn.cursor() as cur:
-            cur.execute("delete from Scripts where is_missed=1")
-        conn.commit()
-        conn.close()
-    except pymysql.err.OperationalError as err:
-        print('Failure: please use only in Toolforge environment')
-        exit(1)
-    
-    print('Removed redundant rows...')
 
 if __name__ == "__main__":
     df = get_only_db_pages()
     get_pages(df, in_api=0, in_database=1)
-    # remove_missed_contents()
     print('Done loading pages only in database.')

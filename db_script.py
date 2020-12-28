@@ -51,9 +51,9 @@ def get_data(dbs):
             with conn.cursor() as cur:
                 ## Query
                 cur.execute("USE "+db+'_p')
-                SQL_Query = pd.read_sql_query("SELECT page_id,page_title FROM page \
+                SQL_Query = pd.read_sql_query("SELECT page_id, page_title, page_is_redirect, page_is_new FROM page \
                     WHERE page_content_model='Scribunto' AND page_namespace=828", conn)
-                df_page = pd.DataFrame(SQL_Query, columns=['page_id','page_title']).applymap(encode_if_necessary)
+                df_page = pd.DataFrame(SQL_Query).applymap(encode_if_necessary)
 
                 # Saving to db
                 save_to_db(df_page, db)
