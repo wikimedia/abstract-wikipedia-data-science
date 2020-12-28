@@ -4,11 +4,17 @@ import pymysql
 
 from db_script import encode_if_necessary;
 
-def get_rev_info(db):
+def sql_to_df(db, query):
     conn = connectdb(db)
     with conn.cursor() as cur:
         cur.execute("use "+db+'_p')
-        query = (
+        SQL_Query = pd.read_sql_query(query, conn)
+        df = pd.DataFrame(SQL_Query).applymap(encode_if_necessary)
+    conn.close()
+    return df
+
+def get_rev_info(db):
+    query = (
                 "SELECT page.page_id, "
                 "COUNT(rev.rev_page) as edits, SUM(rev.rev_minor_edit) AS minor_edits, "
                 "MIN(rev.rev_timestamp) as first_edit, MAX(rev.rev_timestamp) AS last_edit, "
@@ -21,8 +27,5 @@ def get_rev_info(db):
                 "LEFT JOIN actor AS act "
                 "    ON rev.rev_actor=act.actor_id "
                 "GROUP BY page.page_id"
-                )
-        SQL_Query = pd.read_sql_query(query, conn)
-        df = pd.DataFrame(SQL_Query).applymap(encode_if_necessary)
-    conn.close()
-    return df
+            )
+    return sql_to_df(db, query)
