@@ -3,6 +3,8 @@ import pandas as pd
 import pymysql
 import argparse
 
+import utils.db_access as db_acc
+
 
 DATABASE_NAME = 's54588__data'
 
@@ -13,13 +15,8 @@ def save_to_db(entries, db, user_db_port=None, user=None, password=None):
              "on duplicate key update in_database = %s"
              )
     try:
-        if user_db_port:
-            conn = pymysql.connect(host='127.0.0.1', port=user_db_port,
-                                   user=user, password=password)
-        else:
-            conn = toolforge.toolsdb(DATABASE_NAME)
+        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
-            cur.execute("use " + DATABASE_NAME)
             for index, elem in entries.iterrows():
                 cur.execute(query,
                             [db, elem['page_id'], elem['page_title'], 1, 1])
@@ -38,13 +35,8 @@ def encode_if_necessary(b):
 
 def get_dbs(user_db_port=None, user=None, password=None):
     try:
-        if user_db_port:
-            conn = pymysql.connect(host='127.0.0.1', port=user_db_port,
-                                   user=user, password=password)
-        else:
-            conn = toolforge.toolsdb(DATABASE_NAME)
+        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
-            cur.execute("use " + DATABASE_NAME)
             cur.execute("select dbname from Sources where url is not NULL")  # all, except 'meta'
             ret = [db[0] for db in cur]
         conn.close()
@@ -59,11 +51,7 @@ def get_data(dbs, replicas_port=None, user_db_port=None, user=None, password=Non
     for db in dbs:
         try:
             ## Connect
-            if replicas_port:
-                conn = pymysql.connect(host='127.0.0.1', port=replicas_port,
-                                       user=user, password=password)
-            else:
-                conn = toolforge.connect(dbname=db)
+            conn = db_acc.connect_to_replicas_database(db+"_p", replicas_port, user, password)
             with conn.cursor() as cur:
                 ## Query
                 cur.execute("USE " + db + '_p')
