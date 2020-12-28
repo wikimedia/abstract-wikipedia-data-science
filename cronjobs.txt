@@ -4,7 +4,8 @@
 0 0 * * * jsub -N cron-wiki-2 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 51 100
 0 0 * * * jsub -N cron-wiki-3 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 101 150
 0 0 * * * jsub -N cron-wiki-4a -once -quiet abstract-wikipedia-data-science/fetch_content.sh 151 166
-0 0 * * * jsub -N cron-wiki-4b -once -quiet abstract-wikipedia-data-science/fetch_content.sh 167 200
+0 0 * * * jsub -N cron-wiki-4b -once -quiet abstract-wikipedia-data-science/fetch_content.sh 167 167
+0 0 * * * jsub -N cron-wiki-4c -once -quiet abstract-wikipedia-data-science/fetch_content.sh 168 200
 0 0 * * * jsub -N cron-wiki-5a -once -quiet abstract-wikipedia-data-science/fetch_content.sh 201 221
 0 0 * * * jsub -N cron-wiki-5b -once -quiet abstract-wikipedia-data-science/fetch_content.sh 222 250
 0 0 * * * jsub -N cron-wiki-6 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 251 300
@@ -14,10 +15,10 @@
 0 0 * * * jsub -N cron-wiki-10 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 451 500
 0 0 * * * jsub -N cron-wiki-11 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 501 550
 0 0 * * * jsub -N cron-wiki-12 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 551 600
-0 0 * * * jsub -N cron-wiki-13 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 601 650
-0 0 * * * jsub -N cron-wiki-14a -once -quiet abstract-wikipedia-data-science/fetch_content.sh 651 695
-0 0 * * * jsub -N cron-wiki-14b -once -quiet abstract-wikipedia-data-science/fetch_content.sh 696 700
-0 0 * * * jsub -N cron-wiki-15 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 701 750
+0 0 * * * jsub -N cron-wiki-13 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 601 690
+0 0 * * * jsub -N cron-wiki-14a -once -quiet abstract-wikipedia-data-science/fetch_content.sh 691 696
+0 0 * * * jsub -N cron-wiki-14b -once -quiet abstract-wikipedia-data-science/fetch_content.sh 697 717
+0 0 * * * jsub -N cron-wiki-15 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 718 750
 0 0 * * * jsub -N cron-wiki-16 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 751 800
 
 0 2 * * * jsub -N cron-db -once -quiet abstract-wikipedia-data-science/db_script.sh

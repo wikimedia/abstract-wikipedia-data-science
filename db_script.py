@@ -38,7 +38,7 @@ def get_dbs():
         conn.close()
         return ret
     except pymysql.err.OperationalError as err:
-        print(err)
+        print('Failure: please use only in Toolforge environment')
         exit(1)
 
 
