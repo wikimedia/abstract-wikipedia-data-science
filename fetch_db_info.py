@@ -32,15 +32,19 @@ def get_rev_info(db):
     return sql_to_df(db, query)
 
 def get_iwl_info(db):
-    ## Number of iwlinks that link to the Scribunto modules
-    query = (
-                "SELECT page.page_id, "
-                "COUNT(iwl.iwl_from) as iwls "
-                "FROM page "
-                "INNER JOIN iwlinks AS iwl "
-                "    ON page.page_id=iwl.iwl_from "
-                "    AND page.page_namespace=828 "
-                "    AND page.page_content_model='Scribunto' "
-                "GROUP BY page.page_id"
+    ## But `Module:` is not the only prefix for Scribunto modules.
+    ## It is different for all languages and there are mix and matches. 
+    ## e.g bnwiki has `Modules:` and also `মডিউল:`
+    
+    ## TODO: Collect list of Modules prefixes/how else to identify modules from iwl table?
+    q = (
+            "SELECT page_id, page_title, "
+            "COUNT(iwl_from) AS iwls "
+            "FROM page "
+            "INNER JOIN iwlinks "
+            "    ON iwl_title LIKE CONCAT('Module:', page_title) "
+            "    AND page_namespace=828 "
+            "    AND page_content_model='Scribunto' " 
+            "GROUP BY page_id, page_title "
             )
     return sql_to_df(db, query)
