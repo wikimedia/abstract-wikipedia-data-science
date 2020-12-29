@@ -30,6 +30,12 @@ create table Scripts(
     foreign key (dbname) references Sources(dbname)
 );
 
+create table Interwiki(
+    prefix varchar(32) not null,
+    url text,
+    primary key (prefix)
+);
+
 ```
 
 
