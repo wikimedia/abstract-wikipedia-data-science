@@ -22,8 +22,8 @@ def save_to_db(entries, db, user_db_port=None, user=None, password=None):
                             [db, elem['page_id'], elem['page_title'], 1, 1])
         conn.commit()
         conn.close()
-    except pymysql.err.OperationalError:
-        print('Failure: Please establish connection to Toolforge')
+    except Exception as err:
+        print('Something went wrong.\n', err)
         exit(1)
 
 
@@ -41,8 +41,8 @@ def get_dbs(user_db_port=None, user=None, password=None):
             ret = [db[0] for db in cur]
         conn.close()
         return ret
-    except pymysql.err.OperationalError as err:
-        print('Failure: Please establish connection to Toolforge')
+    except Exception as err:
+        print('Something went wrong.\n', err)
         exit(1)
 
 

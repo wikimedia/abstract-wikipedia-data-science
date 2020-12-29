@@ -26,8 +26,8 @@ def get_wiki_list(start_idx, end_idx, user_db_port=None, user=None, password=Non
             ret = [wiki[0] for wiki in cur][start_idx:end_idx + 1]
         conn.close()
         return ret
-    except pymysql.err.OperationalError:
-        print('Failure: please use only in Toolforge environment')
+    except Exception as err:
+        print('Something went wrong.\n', err)
         exit(1)
 
 
@@ -57,9 +57,6 @@ def save_content(wiki, data_list, in_api, in_database, user_db_port=None, user=N
                              elem['content_model'], elem['lastrevid'], elem['url'], 0])
         conn.commit()
         conn.close()
-    except pymysql.err.OperationalError as err:
-        print('Failure: please use only in Toolforge environment')
-        exit(1)
     except Exception as err:
         print('Error saving pages from', wiki)
         print(err)
@@ -82,10 +79,9 @@ def save_missed_content(wiki, missed, user_db_port=None, user=None, password=Non
                             [dbname, elem['id'], 1, 1, 1, 1])
         conn.commit()
         conn.close()
-    except pymysql.err.OperationalError as err:
-        print('Failure: please use only in Toolforge environment')
+    except Exception as err:
+        print('Something went wrong.\n', err)
         exit(1)
-
 
 def needs_update(wiki, pageid, title, touched, revid):
     return True
@@ -206,8 +202,8 @@ def get_db_map(wikis=[], dbs=[], user_db_port=None, user=None, password=None):
             cur.execute(query, query_input)
             db_map = {data[0]: data[1] for data in cur}
         conn.close()
-    except pymysql.err.OperationalError as err:
-        print('Failure: please use only in Toolforge environment')
+    except Exception as err:
+        print('Something went wrong.\n', err)
         exit(1)
 
     return db_map, placeholders
@@ -280,8 +276,8 @@ def get_missed_contents(wikis, user_db_port=None, user=None, password=None):
             cur.execute(query, list(db_map.keys()))
             df = pd.DataFrame(cur, columns=['page_id', 'dbname'])
         conn.close()
-    except pymysql.err.OperationalError as err:
-        print('Failure: please use only in Toolforge environment')
+    except Exception as err:
+        print('Something went wrong.\n', err)
         exit(1)
 
     df['wiki'] = df['dbname'].map(db_map)

@@ -48,8 +48,8 @@ def get_creation_date_from_db(replicas_port=None, user=None, password=None):
             cur.execute(query)
             time = cur.fetchone()[0]
             return time
-    except pymysql.err.OperationalError:
-        print('Wikiprojects update checker: failure, please establish connection to Toolforge')
+    except Exception as err:
+        print('Something went wrong.\n', err)
         exit(1)
 
 
@@ -72,8 +72,8 @@ def save_links_to_db(entries, user_db_port=None, user=None, password=None):
                 cur.execute(query, [elem[0], elem[1], elem[1]])
         conn.commit()
         conn.close()
-    except pymysql.err.OperationalError:
-        print('Wikiprojects update checker: failure, please establish connection to Toolforge')
+    except Exception as err:
+        print('Something went wrong.\n', err)
         exit(1)
 
 
@@ -98,8 +98,8 @@ def get_last_update_local_db(user_db_port=None, user=None, password=None):
             cur.execute(query)
             update_time = cur.fetchone()[0]
             return update_time
-    except pymysql.err.OperationalError:
-        print('Wikiprojects update checker: failure, please establish connection to Toolforge')
+    except Exception as err:
+        print('Something went wrong.\n', err)
         exit(1)
 
 
@@ -123,8 +123,8 @@ def update_local_db(update_time, user_db_port=None, user=None, password=None):
             cur.execute(query, [time, time])
         conn.commit()
         conn.close()
-    except pymysql.err.OperationalError:
-        print('Wikiprojects update checker: failure, please establish connection to Toolforge')
+    except Exception as err:
+        print('Something went wrong.\n', err)
         exit(1)
 
 
