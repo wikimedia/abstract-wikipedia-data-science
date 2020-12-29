@@ -6,6 +6,7 @@ import pandas as pd
 import pymysql
 import datetime
 import numpy as np
+from urllib.parse import unquote
 
 pymysql.converters.encoders[np.int64] = pymysql.converters.escape_int
 pymysql.converters.conversions = pymysql.converters.encoders.copy()
@@ -136,7 +137,7 @@ def get_contents(wikis, revise=False):
                         title = page['title']
                         touched = page['touched']
                         length = page['length']
-                        url = page['fullurl']
+                        url = unquote(page['fullurl'])
                         revid = page['lastrevid']
                         
                         if (not revise) or needs_update(wiki, pageid, title, touched, revid):
@@ -242,7 +243,7 @@ def get_pages(df, in_api, in_database):
                 result = session.get(params)
                 page = result['query']['pages'][0]
                 if page['lastrevid']!=0:
-                    url = page['fullurl']
+                    url = unquote(page['fullurl'])
                     title = page['title']
                     length = page['length']
                     content_info = page['revisions'][0]['slots']['main']
