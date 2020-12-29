@@ -14,23 +14,25 @@ def sql_to_df(db, query):
     return df
 
 def get_rev_info(db):
+    ## Number of revisions and information info about edits of the Scribunto modules
     query = (
-                "SELECT page.page_id, "
-                "COUNT(rev.rev_page) as edits, SUM(rev.rev_minor_edit) AS minor_edits, "
-                "MIN(rev.rev_timestamp) as first_edit, MAX(rev.rev_timestamp) AS last_edit, "
-                "SUM(case when act.actor_user is null then 1 else 0 end) AS anonymous_edits "
+                "SELECT page_id, "
+                "COUNT(rev_page) AS edits, SUM(rev_minor_edit) AS minor_edits, "
+                "MIN(rev_timestamp) AS first_edit, MAX(rev_timestamp) AS last_edit, "
+                "SUM(case when actor_user is null then 1 else 0 end) AS anonymous_edits "
                 "FROM page "
-                "INNER JOIN revision AS rev "
-                "    ON page.page_id=rev.rev_page "
-                "    AND page.page_namespace=828 "
-                "    AND page.page_content_model='Scribunto' "
-                "LEFT JOIN actor AS act "
-                "    ON rev.rev_actor=act.actor_id "
-                "GROUP BY page.page_id"
+                "INNER JOIN revision "
+                "    ON page_id=rev_page "
+                "    AND page_namespace=828 "
+                "    AND page_content_model='Scribunto' "
+                "LEFT JOIN actor "
+                "    ON rev_actor=actor_id "
+                "GROUP BY page_id"
             )
     return sql_to_df(db, query)
 
 def get_iwl_info(db):
+    ## Number of iwlinks that link to the Scribunto modules
     query = (
                 "SELECT page.page_id, "
                 "COUNT(iwl.iwl_from) as iwls "
