@@ -37,11 +37,6 @@ create table Module(
 
 ```
 
-The `Module` table contains list of all prefix to Scribunto modules like Module, মডিউল, ماجول etc. To populate the table use 
-
-```INSERT INTO Module (module) SELECT DISTINCT LEFT(title, LOCATE(':',title)-1) AS module FROM Scripts;```
-
-
 ## How to access
 
 To access the created database, open the port:
