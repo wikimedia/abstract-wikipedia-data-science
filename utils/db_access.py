@@ -23,7 +23,7 @@ def connect_to_user_database(db_name, user_db_port=None, user=None, password=Non
 
         return conn
     except pymysql.err.OperationalError as err:
-        print('Failure: failure, please establish connection to Toolforge')
+        print('Failure: Please establish connection to Toolforge')
         print('Error: ', err)
         exit(1)
 
@@ -49,6 +49,6 @@ def connect_to_replicas_database(db_name, replicas_port=None, user=None, passwor
 
         return conn
     except pymysql.err.OperationalError as err:
-        print('Failure: failure, please establish connection to Toolforge')
+        print('Failure: Please establish connection to Toolforge')
         print('Error: ', err)
         exit(1)

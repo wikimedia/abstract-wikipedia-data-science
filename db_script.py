@@ -42,7 +42,7 @@ def get_dbs(user_db_port=None, user=None, password=None):
         conn.close()
         return ret
     except pymysql.err.OperationalError as err:
-        print('Failure: failure, please establish connection to Toolforge')
+        print('Failure: Please establish connection to Toolforge')
         exit(1)
 
 
