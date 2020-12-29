@@ -9,11 +9,11 @@ import utils.db_access as db_acc
 DATABASE_NAME = 's54588__data'
 
 
-def get_wikipages_from_db(meta_port=None, user=None, password=None):
+def get_wikipages_from_db(replicas_port=None, user=None, password=None):
     """
     Requests all names of the databases and linked urls for all working Wikimedia projects.
 
-    :param meta_port: Port for connecting to meta table through ssh tunneling, if used.
+    :param replicas_port: Port for connecting to meta table through ssh tunneling, if used.
     :param user: Toolforge username of the tool.
     :param password: Toolforge password of the tool.
     :return: ((dbname1, url1), (dbname2, url2),...)
@@ -23,17 +23,17 @@ def get_wikipages_from_db(meta_port=None, user=None, password=None):
              "    from wiki\n"
              "    where is_closed = 0")
 
-    conn = db_acc.connect_to_replicas_database('meta_p', meta_port, user, password)
+    conn = db_acc.connect_to_replicas_database('meta_p', replicas_port, user, password)
     with conn.cursor() as cur:
         cur.execute(query)
         return cur.fetchall()
 
 
-def get_creation_date_from_db(meta_port=None, user=None, password=None):
+def get_creation_date_from_db(replicas_port=None, user=None, password=None):
     """
     Requests date of the creation of the meta table (which seems to be the date of the update).
 
-    :param meta_port: Port for connecting to meta table through ssh tunneling, if used.
+    :param replicas_port: Port for connecting to meta table through ssh tunneling, if used.
     :param user: Toolforge username of the tool.
     :param password: Toolforge password of the tool.
     :return: Datetime.datetime
@@ -43,7 +43,7 @@ def get_creation_date_from_db(meta_port=None, user=None, password=None):
              "    from INFORMATION_SCHEMA.TABLES\n"
              "    where table_name = 'wiki'")
     try:
-        conn = db_acc.connect_to_replicas_database('meta_p', meta_port, user, password)
+        conn = db_acc.connect_to_replicas_database('meta_p', replicas_port, user, password)
         with conn.cursor() as cur:
             cur.execute(query)
             time = cur.fetchone()[0]
@@ -53,12 +53,12 @@ def get_creation_date_from_db(meta_port=None, user=None, password=None):
         exit(1)
 
 
-def save_links_to_db(entries, sources_port=None, user=None, password=None):
+def save_links_to_db(entries, user_db_port=None, user=None, password=None):
     """
     Saves links and dbnames to the local project database.
 
     :param entries: List(tuple) of lists(tuples), with pairs 'dbname - url'
-    :param sources_port: Port for connecting to local Sources table through ssh tunneling, if used.
+    :param user_db_port: Port for connecting to local Sources table through ssh tunneling, if used.
     :param user: Toolforge username of the tool.
     :param password: Toolforge password of the tool.
     :return: None
@@ -66,7 +66,7 @@ def save_links_to_db(entries, sources_port=None, user=None, password=None):
     query = ("insert into Sources(dbname, url) values(%s, %s)\n"
              "on duplicate key update url = %s")
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, sources_port, user, password)
+        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             for elem in entries:
                 cur.execute(query, [elem[0], elem[1], elem[1]])
@@ -77,12 +77,12 @@ def save_links_to_db(entries, sources_port=None, user=None, password=None):
         exit(1)
 
 
-def get_last_update_local_db(sources_port=None, user=None, password=None):
+def get_last_update_local_db(user_db_port=None, user=None, password=None):
     """
     Looks into database with last update times and fetches last update time for meta table, if it is stored.
     If such file doesn't exits, creates it.
 
-    :param sources_port: Port for connecting to local Sources table through ssh tunneling, if used.
+    :param user_db_port: Port for connecting to local Sources table through ssh tunneling, if used.
     :param user: Toolforge username of the tool.
     :param password: Toolforge password of the tool.
     :return: Datetime.datetime of last update or None
@@ -93,7 +93,7 @@ def get_last_update_local_db(sources_port=None, user=None, password=None):
     update_time = None
 
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, sources_port, user, password)
+        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             cur.execute(query)
             update_time = cur.fetchone()[0]
@@ -103,12 +103,12 @@ def get_last_update_local_db(sources_port=None, user=None, password=None):
         exit(1)
 
 
-def update_local_db(update_time, sources_port=None, user=None, password=None):
+def update_local_db(update_time, user_db_port=None, user=None, password=None):
     """
     Saves new update time for meta table, creating corresponding row if needed.
 
     :param update_time: Datetime.datetime, time of last update for meta table
-    :param sources_port: Port for connecting to local Sources table through ssh tunneling, if used.
+    :param user_db_port: Port for connecting to local Sources table through ssh tunneling, if used.
     :param user: Toolforge username of the tool.
     :param password: Toolforge password of the tool.
     :return: None
@@ -117,7 +117,7 @@ def update_local_db(update_time, sources_port=None, user=None, password=None):
              "on duplicate key update update_time = %s"
              )
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, sources_port, user, password)
+        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             time = update_time.strftime('%Y-%m-%d %H:%M:%S')
             cur.execute(query, [time, time])
@@ -128,21 +128,21 @@ def update_local_db(update_time, sources_port=None, user=None, password=None):
         exit(1)
 
 
-def update_checker(meta_port=None, sources_port=None, user=None, password=None):
-    wiki_db_update_time = get_creation_date_from_db(meta_port, user, password)
+def update_checker(replicas_port=None, user_db_port=None, user=None, password=None):
+    wiki_db_update_time = get_creation_date_from_db(replicas_port, user, password)
     print('Wikiprojects update checker: time of last update fetched from database')
-    local_db_update_time = get_last_update_local_db(sources_port, user, password)
+    local_db_update_time = get_last_update_local_db(user_db_port, user, password)
     print('Wikiprojects update checker: local time of last update fetched')
     if local_db_update_time is not None:
         if wiki_db_update_time == local_db_update_time:
             print('Wikiprojects update checker: update not needed')
             return
 
-    db_info = get_wikipages_from_db(meta_port, user, password)
+    db_info = get_wikipages_from_db(replicas_port, user, password)
     print('Wikiprojects update checker: wikilinks info fetched from db')
-    save_links_to_db(db_info, sources_port, user, password)
+    save_links_to_db(db_info, user_db_port, user, password)
     print('Wikiprojects update checker: wikipages links updated in db')
-    update_local_db(wiki_db_update_time, sources_port, user, password)
+    update_local_db(wiki_db_update_time, user_db_port, user, password)
     print('Wikiprojects update checker: update finished')
 
 
