@@ -10,9 +10,7 @@ def populate_table():
         with conn.cursor() as cur:
             cur.execute(query)
             for module in modules:
-                print(module)
-                break
-                cur.execute("INSERT INTO Module (module) values %s", moduele[0])
+                cur.execute("INSERT INTO Module (module) values (%s)", module[0])
         conn.commit()
         conn.close()
     except pymysql.err.OperationalError as err:
