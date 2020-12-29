@@ -35,6 +35,7 @@ def get_iwl_info(db):
     ## But `Module:` is not the only prefix for Scribunto modules.
     ## It is different for all languages and there are mix and matches. 
     ## e.g bnwiki has `Modules:` and also `মডিউল:`
+    ## e.g different pronounciation and spelling from same language ماجول , ماڈیول 
     
     ## TODO: Collect list of Modules prefixes/how else to identify modules from iwl table?
     q = (

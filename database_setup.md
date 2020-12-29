@@ -30,7 +30,16 @@ create table Scripts(
     foreign key (dbname) references Sources(dbname)
 );
 
+create table Module(
+    id int auto_increment primary key NOT NULL,
+    module varbinary(32)
+);
+
 ```
+
+The `Module` table contains list of all prefix to Scribunto modules like Module, মডিউল, ماجول etc. To populate the table use 
+
+```INSERT INTO Module (module) SELECT DISTINCT LEFT(title, LOCATE(':',title)-1) AS module FROM Scripts;```
 
 
 ## How to access
