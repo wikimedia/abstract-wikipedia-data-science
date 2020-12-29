@@ -5,13 +5,17 @@ import pymysql
 from db_script import encode_if_necessary;
 
 def sql_to_df(db, query):
-    conn = connectdb(db)
-    with conn.cursor() as cur:
-        cur.execute("use "+db+'_p')
-        SQL_Query = pd.read_sql_query(query, conn)
-        df = pd.DataFrame(SQL_Query).applymap(encode_if_necessary)
-    conn.close()
-    return df
+    try:
+        conn = connectdb(db)
+        with conn.cursor() as cur:
+            cur.execute("use "+db+'_p')
+            SQL_Query = pd.read_sql_query(query, conn)
+            df = pd.DataFrame(SQL_Query).applymap(encode_if_necessary)
+        conn.close()
+        return df
+    except pymysql.err.OperationalError as err:
+        print('Failure: please use only in Toolforge environment')
+        exit(1)
 
 def get_rev_info(db):
     ## Number of revisions and information info about edits of the Scribunto modules
