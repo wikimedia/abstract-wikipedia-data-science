@@ -30,12 +30,8 @@ create table Scripts(
     foreign key (dbname) references Sources(dbname)
 );
 
-create table Module(
-    id int auto_increment primary key NOT NULL,
-    module varbinary(32)
-);
-
 ```
+
 
 ## How to access
 
