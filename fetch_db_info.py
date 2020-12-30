@@ -208,6 +208,7 @@ def get_categories_info(db, replicas_port=None, user=None, password=None):
     ## Number of categories a module is included in
     ## There is not concrete list of categores to look for.
     ## We can list it ourselves, but then again it varies according to language.
+    ## If required, use the category table to identify important categories
 
     q = (
         "SELECT page_id, COUNT(DISTINCT cl_to) AS categories "
