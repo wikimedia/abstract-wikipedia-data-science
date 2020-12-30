@@ -46,6 +46,16 @@ def get_dbs(user_db_port=None, user=None, password=None):
 
 
 def get_data(dbs, replicas_port=None, user_db_port=None, user=None, password=None):
+    """
+    Goes through all the wikis and fetches Scribunto modules from them, saving collected data to user's database.
+
+    :param dbs: list of dbnames, from which the modules will be collected
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
     ## Get all pages
     for db in dbs:
         try:
