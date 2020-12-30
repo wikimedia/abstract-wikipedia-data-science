@@ -57,6 +57,8 @@ You can submit a jsub job by using corresponding script from *shell_scripts* fol
    
    Collects full info about Scribunto modules from the list of the wikis, stored in Sources, using Wikimedia API; 
    saves this info to Scripts table.
+   
+   Can be used to revise the info about pages, stored in the Scripts table. For this, use `--revise` argument.
 
 3. db_script.py
    
