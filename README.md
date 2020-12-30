@@ -27,7 +27,7 @@ $ ./init.sh
 ```
 
 This will set up Python environment (and get some work done for 
-[setting up cron jobs](#how-to-set-up-scripts-as-cron-job)). After that, ypu can run Python code.
+[setting up cron jobs](#how-to-schedule-the-scripts)). After that, ypu can run Python code.
 
 Some scripts require positional arguments to run correctly, especially if you want to run them from local PC
 (more info [here](#how-to-use-code-remotely)). To find out more on which exactly arguments the program needs, 
