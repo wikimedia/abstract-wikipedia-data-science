@@ -130,6 +130,7 @@ def get_interwiki(user_db_port=None, user=None, password=None):
 
 def get_pl_info(db, replicas_port=None, user=None, password=None):
     ## Number of (in-wiki) pages that referenced a module
+
     query = (
                 "SELECT page_id, "
                 "COUNT(DISTINCT pl_from) as pls "
@@ -141,6 +142,22 @@ def get_pl_info(db, replicas_port=None, user=None, password=None):
                 "    AND pl_namespace=828 "
                 "GROUP BY page_id"
             )
+    return sql_to_df(db=db, query=query, replicas_port=replicas_port, user=user, password=password)
+
+def get_ll_info(db, replicas_port=None, user=None, password=None):
+    ## Number of languages links a module has (ll)
+    ## Number of languages a module is available in (ll+1)
+    ## Use the lanlink table more to find out language independednt subset of modules
+    
+    query = (
+            "SELECT page_id, COUNT(DISTINCT ll_lang) AS langs "
+            "FROM page "
+            "INNER JOIN langlinks "
+            "    ON ll_from=page_id "
+            "    AND page_namespace=828 "
+            "    AND page_content_model='Scribunto' "
+            "GROUP BY page_id "
+    )
     return sql_to_df(db=db, query=query, replicas_port=replicas_port, user=user, password=password)
 
 if __name__ == "__main__":
