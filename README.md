@@ -85,6 +85,9 @@ to the replicas, so they don't have `-r` as argument. Check `--help` to see if i
 
 ### How to schedule the scripts
 
+Scheduling script work is useful to automatically update contents of user's database. This can be done by using cron.
 
-
+Use `crontab -e` and add to the end something like 
+`0 0 * * * jsub abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 0 10`.
+This example will run every day at the midnight - more detailed explanation is available after running `crontab -e`.
 
