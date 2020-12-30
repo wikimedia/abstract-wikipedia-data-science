@@ -221,6 +221,32 @@ def get_categories_info(db, replicas_port=None, user=None, password=None):
 
     return sql_to_df(db=db, query=query, replicas_port=replicas_port, user=user, password=password)
 
+def get_edit_protection_info(db, replicas_port=None, user=None, password=None):
+    ## Protection level for `edit` for the modules
+
+    q = ("SELECT page_id, pr_level AS pr_level_edit FROM page_restrictions "
+        "INNER JOIN page "
+        "    ON page_id=pr_page "
+        "    AND page_namespace=828 "
+        "    AND page_content_model='Scribunto' "
+        "    AND pr_type='edit'"
+    )
+
+    return sql_to_df(db=db, query=query, replicas_port=replicas_port, user=user, password=password)
+
+def get_move_protection_info(db, replicas_port=None, user=None, password=None):
+    ## Protection level for `move` for the modules
+
+    q = ("SELECT page_id, pr_level AS pr_level_move FROM page_restrictions "
+        "INNER JOIN page "
+        "    ON page_id=pr_page "
+        "    AND page_namespace=828 "
+        "    AND page_content_model='Scribunto' "
+        "    AND pr_type='move'"
+    )
+
+    return sql_to_df(db=db, query=query, replicas_port=replicas_port, user=user, password=password)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description=""
