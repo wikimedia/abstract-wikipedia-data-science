@@ -19,12 +19,66 @@ Fetched data is stored into the database, created by user. To create the user's 
 
 *3. Run the scripts*
 
-The order is:
+To run the scripts from Toolforge tool's account, first you need to initiate Python environment and 
+install requirements. For this, do the following:
+```shell
+$ chmod +x init.sh
+$ ./init.sh
+```
+
+This will set up Python environment (and get some work done for 
+[setting up cron jobs](#how-to-set-up-scripts-as-cron-job)). After that, ypu can run Python code.
+
+Some scripts require positional arguments to run correctly, especially if you want to run them from local PC.
+(more info [here](#how-to-use-code-remotely)). To find out more on which exactly arguments the program needs, 
+help is available by running `python3 <script-name> -h`.
+
+In short, right now only *fetch_content.py* has obligatory parameters *start_idx* and *end_idx*, which are used
+to let you choose, which exactly wikis you are fetching modules from (indexes start with 0, and the order of them
+is based on *Sources* table order).
+
+The order to run the scripts is:
 1. wikis_parser.py
 2. db_script.py
 3. fetch_content.py 
 
+### How to use code remotely
+
+You can run python scripts, mentioned previously, from your local PC - but you still have to establish
+connection to the Toolforge. This requires you to use [ssh tunneling to Toolforge databases](https://wikitech.wikimedia.org/wiki/Help:Toolforge/Database#SSH_tunneling_for_local_testing_which_makes_use_of_Wiki_Replica_databases).
+Most likely, you'd need to open the tunnel to two databases: any wiki on *analytics.db.svc.eqiad.wmflabs*
+(for example, *enwiki.analytics.db.svc.eqiad.wmflabs*) and *tools.db.svc.eqiad.wmflabs*. 
+The ssh port of 1st connection is referred to as *replicas port*, as it allows connecting to the Wikimedia database replicas,
+the ssh port of 2nd connection is referred to as *user db port*, as user's database is stored in Tools.
+
+Additionally, you'll need to know the username and password of the tool, where you created the user's database. 
+This info is stored into *$HOME/replica.my.cnf* so get this file's content, for example, 
+with `$ nano $HOME/replica.my.cnf`
+
+To run scripts from local environment, you need to use flags and parameters. 
+For example, this is how to get *wikis_parser.py* working from local environment:
+```shell
+$ python3 wikis_parser.py -l -r=<replicas-port> -udb=<user-db-port> -u=<username> -p=<password>
+```
+
++ `-l` or `--local` states that the connection should be handled through ssh tunneling.
+All the other info is not used, if this argument is missed.
+  
++ `-r` or `--replicas-port` requires the port of the ssh tunnel, connected to any database on
+*analytics.db.svc.eqiad.wmflabs*, as discussed before.
+  
++ `-udb` or `--user-db-port` requires the port of the ssh tunnel, connected to user's database on
+*tools.db.svc.eqiad.wmflabs*, as discussed before.
+  
++ `-u` or `--user` requires username from the tool's *replica.my.cnf*.
+
++ `-p` or `--password` requires password from the tool's *replica.my.cnf*.
+
+Missing any of these parameters will result in error.
+
+In other Python scripts the same arguments are utilized to use ssh. But some of the scripts don't need connection
+to the replicas, so they don't have `-r` as argument. Check `--help` to see if it's required.
+
 ### How to set up scripts as cron job
 
 
-### How to use code remotely
