@@ -182,7 +182,7 @@ def get_transclusions_info(db, replicas_port=None, user=None, password=None):
     ## this includes docs and other stuffs too
     ## so we need to filter by namespace and content_model
     ## The query makes sure both from and to pages are Scribunto modules
-    
+
     query = (
             "SELECT tl_from, COUNT(DISTINCT tl_title) as transclusions "
             "FROM page "
@@ -199,6 +199,23 @@ def get_transclusions_info(db, replicas_port=None, user=None, password=None):
             "        WHERE page_namespace=828 AND page_content_model='Scribunto' "
             "    ) "
             "GROUP BY tl_from"
+    )
+
+    return sql_to_df(db=db, query=query, replicas_port=replicas_port, user=user, password=password)
+
+def get_categories_info(db, replicas_port=None, user=None, password=None):
+    ## Number of categories a module is included in
+    ## There is not concrete list of categores to look for.
+    ## We can list it ourselves, but then again it varies according to language.
+
+    q = (
+        "SELECT page_id, COUNT(DISTINCT cl_to) AS categories "
+        "FROM page "
+        "INNER JOIN categorylinks "
+        "    ON cl_from=page_id "
+        "    AND page_namespace=828 "
+        "    AND page_content_model='Scribunto' "
+        "GROUP BY page_id "
     )
 
     return sql_to_df(db=db, query=query, replicas_port=replicas_port, user=user, password=password)
