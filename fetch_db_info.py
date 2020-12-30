@@ -166,7 +166,7 @@ def get_templatelinks_info(db, replicas_port=None, user=None, password=None):
 
     query = (
             "SELECT page_id, "
-            "COUNT(DISTINCT tl_from) as tls "
+            "COUNT(DISTINCT tl_from) as transcluded_in "
             "FROM page "
             "INNER JOIN templatelinks "
             "    ON page_title=tl_title "
@@ -175,6 +175,32 @@ def get_templatelinks_info(db, replicas_port=None, user=None, password=None):
             "    AND tl_namespace=828 "
             "GROUP BY page_id"
     )
+    return sql_to_df(db=db, query=query, replicas_port=replicas_port, user=user, password=password)
+
+def get_transclusions_info(db, replicas_port=None, user=None, password=None):
+    ## Number of modules transcluded in a module
+    ## this includes docs and other stuffs too
+    ## so we need to filter by namespace and content_model
+    ## The query makes sure both from and to pages are Scribunto modules
+    
+    query = (
+            "SELECT tl_from, COUNT(DISTINCT tl_title) as transclusions "
+            "FROM page "
+            "INNER JOIN templatelinks "
+            "    ON page_id=tl_from "
+            "    AND tl_from_namespace=828 "
+            "    AND tl_namespace=828 "
+            "    AND page_namespace=828 "
+            "    AND page_content_model='Scribunto'"
+            "WHERE tl_title IN "
+            "    ("
+            "        SELECT page_title "
+            "        FROM page "
+            "        WHERE page_namespace=828 AND page_content_model='Scribunto' "
+            "    ) "
+            "GROUP BY tl_from"
+    )
+
     return sql_to_df(db=db, query=query, replicas_port=replicas_port, user=user, password=password)
 
 if __name__ == "__main__":
