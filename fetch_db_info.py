@@ -247,6 +247,47 @@ def get_move_protection_info(db, replicas_port=None, user=None, password=None):
 
     return sql_to_df(db=db, query=query, replicas_port=replicas_port, user=user, password=password)
 
+def get_most_common_tag_info(db, replicas_port=None, user=None, password=None):
+    ## Comma separated most common tag names for each page
+    ## See the inline view (subquery) for details on each page
+
+    q = (
+    "select tagcount.page_id, GROUP_CONCAT(ctd_name) as tags "
+    "from "
+        "(select page_id, ctd_name, count(*) as tags "
+         "from change_tag "
+         "inner join change_tag_def "
+         "on ct_tag_id=ctd_id "
+         "inner join revision "
+         "on ct_rev_id=rev_id "
+         "inner join page "
+         "on rev_page=page_id "
+         "and page_namespace=828 "
+         "and page_content_model='Scribunto' "
+         "group by page_id, ctd_name "
+         ") as tagcount "
+    "inner join "
+         "(select page_id, max(tags) as most_common_tag_count from "
+            "(select page_id, ctd_name, count(*) as tags "
+            "from change_tag "
+            "inner join change_tag_def "
+            "on ct_tag_id=ctd_id "
+            "inner join revision "
+            "on ct_rev_id=rev_id "
+            "inner join page "
+            "on rev_page=page_id "
+            "and page_namespace=828 "
+            "and page_content_model='Scribunto' "
+            "group by page_id, ctd_name "
+            ") as tagcount "
+        "group by page_id) as mosttag "
+        "on mosttag.page_id=tagcount.page_id "
+        "and tagcount.tags=mosttag.most_common_tag_count "
+    "group by tagcount.page_id"
+    )
+
+    return sql_to_df(db=db, query=query, replicas_port=replicas_port, user=user, password=password)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description=""
