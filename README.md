@@ -39,12 +39,35 @@ is based on *Sources* table order).
 
 The order to run the scripts is:
 1. wikis_parser.py
-2. db_script.py
-3. fetch_content.py 
+2. fetch_content.py 
+3. db_script.py
+4. get_db_pages.py
 
 As running some scripts require quite a lot of time and computations, whe in Toolforge environment, 
 it is recommended to use [jsub](https://wikitech.wikimedia.org/wiki/Help:Toolforge/Grid#Submitting_simple_one-off_jobs_using_'jsub').
 You can submit a jsub job by using corresponding script from *shell_scripts* folder.
+
+#### What python files are doing
+
+1. wikis_parser.py
+
+   Collects all the names of wikis' databases and their urls from meta database and saves them to Sources table. 
+
+3. fetch_content.py
+   
+   Collects full info about Scribunto modules from the list of the wikis, stored in Sources, using Wikimedia API; 
+   saves this info to Scripts table.
+
+3. db_script.py
+   
+   Collects basic info (page_id, title) about Scribunto modules from the list of the wikis, stored in Sources,
+   using database replicas; saves this info to Scripts table or updates in_database flag, if the same thing 
+   was obtained through API requests.
+   
+4. get_db_pages.py
+
+   Collects additional info about Scribunto modules, whose info was fetched from database replicas, but didn't appear
+   in API request results; saves this info to Scripts table.
 
 ### How to use code remotely
 
