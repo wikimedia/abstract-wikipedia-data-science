@@ -29,7 +29,7 @@ $ ./init.sh
 This will set up Python environment (and get some work done for 
 [setting up cron jobs](#how-to-set-up-scripts-as-cron-job)). After that, ypu can run Python code.
 
-Some scripts require positional arguments to run correctly, especially if you want to run them from local PC.
+Some scripts require positional arguments to run correctly, especially if you want to run them from local PC
 (more info [here](#how-to-use-code-remotely)). To find out more on which exactly arguments the program needs, 
 help is available by running `python3 <script-name> -h`.
 
@@ -41,6 +41,10 @@ The order to run the scripts is:
 1. wikis_parser.py
 2. db_script.py
 3. fetch_content.py 
+
+As running some scripts require quite a lot of time and computations, whe in Toolforge environment, 
+it is recommended to use [jsub](https://wikitech.wikimedia.org/wiki/Help:Toolforge/Grid#Submitting_simple_one-off_jobs_using_'jsub').
+You can submit a jsub job by using corresponding script from *shell_scripts* folder.
 
 ### How to use code remotely
 
@@ -79,6 +83,8 @@ Missing any of these parameters will result in error.
 In other Python scripts the same arguments are utilized to use ssh. But some of the scripts don't need connection
 to the replicas, so they don't have `-r` as argument. Check `--help` to see if it's required.
 
-### How to set up scripts as cron job
+### How to schedule the scripts
+
+
 
 
