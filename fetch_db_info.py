@@ -48,6 +48,7 @@ def get_revision_info(db, replicas_port=None, user=None, password=None):
 
 def get_iwlinks_info(db, user_db_port=None, replicas_port=None, user=None, password=None):
     ## Number of inter wiki pages that referenced a module
+    ## iwls from other dbs need to be added for each module
 
     """
     `Module:` is not the only prefix for Scribunto modules.
@@ -147,7 +148,7 @@ def get_pagelinks_info(db, replicas_port=None, user=None, password=None):
 def get_langlinks_info(db, replicas_port=None, user=None, password=None):
     ## Number of languages links a module has (ll)
     ## Number of languages a module is available in (ll+1)
-    ## Use the lanlink table more to find out language independednt subset of modules
+    ## Use the lanlink table more to find out language independent subset of modules
 
     query = (
             "SELECT page_id, COUNT(DISTINCT ll_lang) AS langs "
@@ -160,7 +161,21 @@ def get_langlinks_info(db, replicas_port=None, user=None, password=None):
     )
     return sql_to_df(db=db, query=query, replicas_port=replicas_port, user=user, password=password)
 
+def get_templatelinks_info(db, replicas_port=None, user=None, password=None):
+    ## Number of transclusions of a module
 
+    query = (
+            "SELECT page_id, "
+            "COUNT(DISTINCT tl_from) as tls "
+            "FROM page "
+            "INNER JOIN templatelinks "
+            "    ON page_title=tl_title "
+            "    AND page_namespace=828 "
+            "    AND page_content_model='Scribunto' "
+            "    AND tl_namespace=828 "
+            "GROUP BY page_id"
+    )
+    return sql_to_df(db=db, query=query, replicas_port=replicas_port, user=user, password=password)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
