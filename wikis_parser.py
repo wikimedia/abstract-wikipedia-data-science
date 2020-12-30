@@ -1,6 +1,4 @@
 ## imports
-import pymysql.err
-import pymysql
 import argparse
 
 import utils.db_access as db_acc

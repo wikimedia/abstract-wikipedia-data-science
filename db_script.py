@@ -1,6 +1,5 @@
-import toolforge
+## imports
 import pandas as pd
-import pymysql
 import argparse
 
 import utils.db_access as db_acc

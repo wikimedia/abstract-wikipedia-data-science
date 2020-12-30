@@ -1,6 +1,6 @@
 ## imports
-from fetch_content import *;
-from db_script import encode_if_necessary;
+from fetch_content import *
+from db_script import encode_if_necessary
 
 pymysql.converters.encoders[np.int64] = pymysql.converters.escape_int
 pymysql.converters.conversions = pymysql.converters.encoders.copy()
