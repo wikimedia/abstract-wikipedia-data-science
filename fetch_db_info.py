@@ -9,7 +9,7 @@ from db_script import encode_if_necessary;
 
 DATABASE_NAME = 's54588__data'
 
-def sql_to_df(db=None, query, user_db_port=None, replicas_port=None, user=None, password=None):
+def sql_to_df(query, db=None, user_db_port=None, replicas_port=None, user=None, password=None):
     try:
         if replicas_port:
             conn = db_acc.connect_to_replicas_database(db, replicas_port, user, password)
@@ -70,7 +70,7 @@ def get_iwl_info(db, user_db_port=None, replicas_port=None, user=None, password=
         )
     drop_query = ("drop table Iwlinks")
     query = (
-            "SELECT page_id, dbname, COUNT(iwl_from) AS iwls "
+            "SELECT page_id, dbname, COUNT(DISTINCT iwl_from) AS iwls "
             "FROM Scripts "
             "INNER JOIN "
             "    ("
@@ -127,6 +127,21 @@ def get_interwiki(user_db_port=None, user=None, password=None):
     except Exception as err:
         print('Something went wrong.\n', err)
         exit(1)
+
+def get_pl_info(db, replicas_port=None, user=None, password=None):
+    ## Number of (in-wiki) pages that referenced a module
+    query = (
+                "SELECT page_id, "
+                "COUNT(DISTINCT pl_from) as pls "
+                "FROM page "
+                "INNER JOIN pagelinks "
+                "    ON page_title=pl_title "
+                "    AND page_namespace=828 "
+                "    AND page_content_model='Scribunto' "
+                "    AND pl_namespace=828 "
+                "GROUP BY page_id"
+            )
+    return sql_to_df(db=db, query=query, replicas_port=replicas_port, user=user, password=password)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
