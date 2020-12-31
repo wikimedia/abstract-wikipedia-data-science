@@ -28,6 +28,30 @@ def sql_to_df(query, db=None, user_db_port=None, replicas_port=None, user=None, 
         print('Something went wrong.\n', err)
         exit(1)
 
+def save_df(df, dbname, user_db_port=None, user=None, password=None):
+
+    cols = df.columns.values[1:] # skip page_id
+    colnames = ','.join(cols)
+    placeholders = ','.join(['%s' for _ in cols])
+    updates = ','.join([col+'=%s' for col in cols])
+
+    query = (
+        "insert into Scripts(%s) values(%s) "
+        "on duplicate key update %s "
+        "where dbname=%s and page_id=%s " % (colnames, placeholders, updates, dbname, '%s')
+        )
+        
+    try:
+        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        with conn.cursor() as cur:
+            for index, elem in df.iterrows():
+                cur.execute(query,np.concatenate((elem.values[1:], elem.values[1:], elem[0])))
+        conn.commit()
+        conn.close()
+    except Exception as err:
+        print('Error saving pages from', wiki)
+        print(err)
+
 def get_revision_info(db, replicas_port=None, user=None, password=None):
     ## Number of revisions and information info about edits of the Scribunto modules
     query = (
