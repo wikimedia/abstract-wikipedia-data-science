@@ -5,9 +5,11 @@ import argparse
 import mwapi
 
 import utils.db_access as db_acc
-from db_script import encode_if_necessary;
+from db_script import encode_if_necessary, get_dbs
 
 DATABASE_NAME = 's54588__data'
+
+## Utils
 
 def sql_to_df(query, db=None, user_db_port=None, replicas_port=None, user=None, password=None):
     try:
@@ -40,7 +42,7 @@ def save_df(df, dbname, user_db_port=None, user=None, password=None):
         "on duplicate key update %s "
         "where dbname=%s and page_id=%s " % (colnames, placeholders, updates, dbname, '%s')
         )
-        
+
     try:
         conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
@@ -51,6 +53,40 @@ def save_df(df, dbname, user_db_port=None, user=None, password=None):
     except Exception as err:
         print('Error saving pages from', wiki)
         print(err)
+
+## Populate Interwiki
+
+def get_interwiki(user_db_port=None, user=None, password=None):
+
+    ## Get interwiki mapping from API
+    user_agent = toolforge.set_user_agent('abstract-wiki-ds')
+    session = mwapi.Session('https://en.wikipedia.org', user_agent=user_agent)
+    params = {
+        'action':'query',
+        'format':'json',
+        'meta':'siteinfo',
+        'siprop':'interwikimap'
+    }
+    result = session.get(params)
+    ret = result['query']['interwikimap']
+
+    ## Save interwiki mapping to user_db
+    query = (
+        "insert into Interwiki(prefix, url) values(%s, %s) "
+        "on duplicate key update url = %s"
+        )
+    try:
+        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        with conn.cursor() as cur:
+            for mp in ret:
+                cur.execute(query, (mp['prefix'], mp['url'], mp['url']))
+        conn.commit()
+        conn.close()
+    except Exception as err:
+        print('Something went wrong.\n', err)
+        exit(1)
+
+## Get info from DB
 
 def get_revision_info(db, replicas_port=None, user=None, password=None):
     ## Number of revisions and information info about edits of the Scribunto modules
@@ -126,36 +162,6 @@ def get_iwlinks_info(db, user_db_port=None, replicas_port=None, user=None, passw
         conn_db.close()
         conn.close()
         return df
-    except Exception as err:
-        print('Something went wrong.\n', err)
-        exit(1)
-
-def get_interwiki(user_db_port=None, user=None, password=None):
-
-    ## Get interwiki mapping from API
-    user_agent = toolforge.set_user_agent('abstract-wiki-ds')
-    session = mwapi.Session('https://en.wikipedia.org', user_agent=user_agent)
-    params = {
-        'action':'query',
-        'format':'json',
-        'meta':'siteinfo',
-        'siprop':'interwikimap'
-    }
-    result = session.get(params)
-    ret = result['query']['interwikimap']
-
-    ## Save interwiki mapping to user_db
-    query = (
-        "insert into Interwiki(prefix, url) values(%s, %s) "
-        "on duplicate key update url = %s"
-        )
-    try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
-        with conn.cursor() as cur:
-            for mp in ret:
-                cur.execute(query, (mp['prefix'], mp['url'], mp['url']))
-        conn.commit()
-        conn.close()
     except Exception as err:
         print('Something went wrong.\n', err)
         exit(1)
@@ -319,6 +325,41 @@ def get_most_common_tag_info(db, replicas_port=None, user=None, password=None):
 
     return sql_to_df(db=db, query=query, replicas_port=replicas_port, user=user, password=password)
 
+def get_data(replicas_port=None, user_db_port=None, user=None, password=None):
+    
+    dbs = get_dbs(user_db_port, user, password)
+    
+    for db in dbs:
+        df = get_revision_info(db, replicas_port, user, password)
+        save_df(df, db, user_db_port, user, password)
+
+        df = get_iwlinks_info(db, user_db_port, replicas_port, user, password)
+        save_df(df, db, user_db_port, user, password)
+
+        df = get_pagelinks_info(db, replicas_port, user, password)
+        save_df(df, db, user_db_port, user, password)
+
+        df = get_langlinks_info(db, replicas_port, user, password)
+        save_df(df, db, user_db_port, user, password)
+
+        df = get_templatelinks_info(db, replicas_port, user, password)
+        save_df(df, db, user_db_port, user, password)
+
+        df = get_transclusions_info(db, replicas_port, user, password)
+        save_df(df, db, user_db_port, user, password)
+
+        df = get_categories_info(db, replicas_port, user, password)
+        save_df(df, db, user_db_port, user, password)
+
+        df = get_edit_protection_info(db, replicas_port, user, password)
+        save_df(df, db, user_db_port, user, password)
+
+        df = get_move_protection_info(db, replicas_port, user, password)
+        save_df(df, db, user_db_port, user, password)
+
+        df = get_most_common_tag_info(db, replicas_port, user, password)
+        save_df(df, db, user_db_port, user, password)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description=""
@@ -328,6 +369,8 @@ if __name__ == "__main__":
     parser.add_argument("--local", "-l", action="store_true",
                         help="Connection is initiated from local pc.")
     local_data = parser.add_argument_group(title="Info for connecting to Toolforge from local pc")
+    local_data.add_argument("--replicas-port", "-r", type=int,
+                            help="Port for connecting to meta table through ssh tunneling, if used.")
     local_data.add_argument("--user-db-port", "-udb", type=int,
                             help="Port for connecting to tables, created by user in Toolforge, "
                                  "through ssh tunneling, if used.")
@@ -340,6 +383,8 @@ if __name__ == "__main__":
     if not args.local:
         if args.interwiki:
             get_interwiki()
+        get_data()
     else:
         if args.interwiki:
             get_interwiki(args.user_db_port, args.user, args.password)
+        get_data(args.replicas-port, args.user_db_port, args.user, args.password)
