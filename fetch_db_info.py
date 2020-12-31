@@ -333,33 +333,47 @@ def get_data(replicas_port=None, user_db_port=None, user=None, password=None):
     for db in dbs:
         df = get_revision_info(db, replicas_port, user, password)
         save_df(df, db, user_db_port, user, password)
+        print('     Loaded revision table for', db)
 
         df = get_iwlinks_info(db, user_db_port, replicas_port, user, password)
         save_df(df, db, user_db_port, user, password)
+        print('     Loaded iwlinks table for', db)
 
         df = get_pagelinks_info(db, replicas_port, user, password)
         save_df(df, db, user_db_port, user, password)
+        print('     Loaded pagelinks table for', db)
 
         df = get_langlinks_info(db, replicas_port, user, password)
         save_df(df, db, user_db_port, user, password)
+        print('     Loaded langlinks table for', db)
 
         df = get_templatelinks_info(db, replicas_port, user, password)
         save_df(df, db, user_db_port, user, password)
+        print('     Loaded templatelinks table for', db)
 
         df = get_transclusions_info(db, replicas_port, user, password)
         save_df(df, db, user_db_port, user, password)
+        print('     Loaded transclusions for', db)
 
         df = get_categories_info(db, replicas_port, user, password)
         save_df(df, db, user_db_port, user, password)
+        print('     Loaded categorylinks table for', db)
 
         df = get_edit_protection_info(db, replicas_port, user, password)
         save_df(df, db, user_db_port, user, password)
+        print('     Loaded edit protection for', db)
 
         df = get_move_protection_info(db, replicas_port, user, password)
         save_df(df, db, user_db_port, user, password)
+        print('     Loaded move protection for', db)
 
         df = get_most_common_tag_info(db, replicas_port, user, password)
         save_df(df, db, user_db_port, user, password)
+        print('     Loaded tag table for', db)
+
+        print('Finished loading data for', db)
+
+    print("Done loading all data.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
