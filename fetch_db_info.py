@@ -24,8 +24,8 @@ def sql_to_df(query, db=None, user_db_port=None, replicas_port=None, user=None, 
             df = pd.DataFrame(SQL_Query).applymap(encode_if_necessary)
         conn.close()
         return df
-    except pymysql.err.OperationalError as err:
-        print('Failure: please use only in Toolforge environment')
+    except Exception as err:
+        print('Something went wrong.\n', err)
         exit(1)
 
 def get_revision_info(db, replicas_port=None, user=None, password=None):
@@ -56,7 +56,8 @@ def get_iwlinks_info(db, user_db_port=None, replicas_port=None, user=None, passw
     It is different for languages e.g `মডিউল:`, ماجول ,ماڈیول
     So, url was matched with iwl_title
     """
-        
+
+    init_query = ("drop table if exists 'Iwlinks'")  
     create_query = (
         "create table Iwlinks ("
         "    iwl_from int unsigned, "
@@ -85,20 +86,25 @@ def get_iwlinks_info(db, user_db_port=None, replicas_port=None, user=None, passw
             "GROUP BY (page_id, dbname)"
         )
 
-    conn_db = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
-    conn = db_acc.connect_to_replicas_database(db, replicas_port, user, password)
-    with conn_db.cursor() as db_cur, conn.cursor() as cur:
-        db_cur.execute(create_query)
-        cur.execute("use "+db+'_p')
-        cur.execute("select * from iwlinks")
-        for val in cur:
-            db_cur.execute(insert_query, [val[0], val[1], val[2], val[2]])
-        df = sql_to_df(query=query, user_db_port=user_db_port, user=user, password=password)          
-        db_cur.execute(drop_query)
-    conn_db.commit()
-    conn_db.close()
-    conn.close()
-    return df
+    try:
+        conn_db = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_replicas_database(db, replicas_port, user, password)
+        with conn_db.cursor() as db_cur, conn.cursor() as cur:
+            db_cur.execute(init_query)
+            db_cur.execute(create_query)
+            cur.execute("use "+db+'_p')
+            cur.execute("select * from iwlinks")
+            for val in cur:
+                db_cur.execute(insert_query, [val[0], val[1], val[2], val[2]])
+            df = sql_to_df(query=query, user_db_port=user_db_port, user=user, password=password)          
+            db_cur.execute(drop_query)
+        conn_db.commit()
+        conn_db.close()
+        conn.close()
+        return df
+    except Exception as err:
+        print('Something went wrong.\n', err)
+        exit(1)
 
 def get_interwiki(user_db_port=None, user=None, password=None):
 
@@ -149,7 +155,7 @@ def get_pagelinks_info(db, replicas_port=None, user=None, password=None):
 def get_langlinks_info(db, replicas_port=None, user=None, password=None):
     ## Number of languages links a module has (ll)
     ## Number of languages a module is available in (ll+1)
-    ## Use the lanlink table more to find out language independent subset of modules
+    ## Use the langlink table more to find out language independent subset of modules
 
     query = (
             "SELECT page_id, COUNT(DISTINCT ll_lang) AS langs "
