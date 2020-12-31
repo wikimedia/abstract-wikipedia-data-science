@@ -11,9 +11,9 @@ DATABASE_NAME = 's54588__data'
 
 ## Utils
 
-def sql_to_df(query, db=None, user_db_port=None, replicas_port=None, user=None, password=None):
+def sql_to_df(query, db=None, user_db_port=None, replicas_port=None, user=None, password=None, replicas=True):
     try:
-        if replicas_port:
+        if replicas:
             conn = db_acc.connect_to_replicas_database(db, replicas_port, user, password)
             db = db+'_p'
         else:
@@ -156,7 +156,7 @@ def get_iwlinks_info(db, user_db_port=None, replicas_port=None, user=None, passw
             cur.execute("SELECT * FROM iwlinks")
             for val in cur:
                 db_cur.execute(insert_query, [val[0], val[1], val[2], val[2]])
-            df = sql_to_df(query=query, user_db_port=user_db_port, user=user, password=password)          
+            df = sql_to_df(query=query, user_db_port=user_db_port, user=user, password=password, replicas=False)          
             db_cur.execute(drop_query)
         conn_db.commit()
         conn_db.close()
