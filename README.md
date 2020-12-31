@@ -26,7 +26,8 @@ to create an account, and a new tool to use this project in.
 *2. Create user database*
 
 Fetched data is stored into the database, created by user. To create the user's database, please follow 
-[this guide](database_setup.md). Scripts use this database, fetching the name stored in `DATABASE_NAME` constant.
+[this guide](database_setup.md). Scripts use this database, fetching the name stored in `DATABASE_NAME` constant. 
+To modify it, change the value in *constants.py*.
 
 *3. Run the scripts*
 
