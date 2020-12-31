@@ -38,14 +38,14 @@ $ ./init.sh
 ```
 
 This will set up Python environment (and get some work done for 
-[setting up cron jobs](#how-to-schedule-the-scripts)). After that, ypu can run Python code.
+[setting up cron jobs](#how-to-schedule-the-scripts)). After that, you can run Python code.
 
 Some scripts require positional arguments to run correctly, especially if you want to run them from local PC
 (more info [here](#how-to-use-code-remotely)). To find out more on which exactly arguments the program needs, 
 help is available by running `python3 <script-name> -h`.
 
 In short, right now only *fetch_content.py* has obligatory parameters *start_idx* and *end_idx*, which are used
-to let you choose, which exactly wikis you are fetching modules from (indexes start with 0, and the order of them
+to let you choose an exact range of wikis you want to fetch modules from (indexes start with 0, and the order of them
 is based on *Sources* table order).
 
 The order to run the scripts is:
@@ -54,7 +54,7 @@ The order to run the scripts is:
 3. db_script.py
 4. get_db_pages.py
 
-As running some scripts require quite a lot of time and computations, whe in Toolforge environment, 
+As running some scripts require quite a lot of time and computations, when in Toolforge environment, 
 it is recommended to use [jsub](https://wikitech.wikimedia.org/wiki/Help:Toolforge/Grid#Submitting_simple_one-off_jobs_using_'jsub').
 You can submit a jsub job by using corresponding script from *shell_scripts* folder.
 
@@ -93,7 +93,7 @@ the ssh port of 2nd connection is referred to as *user db port*, as user's datab
 
 Additionally, you'll need to know the username and password of the tool, where you created the user's database. 
 This info is stored into *$HOME/replica.my.cnf* so get this file's content, for example, 
-with `$ nano $HOME/replica.my.cnf`
+with `$ cat $HOME/replica.my.cnf`
 
 To run scripts from local environment, you need to use flags and parameters. 
 For example, this is how to get *wikis_parser.py* working from local environment:
@@ -126,4 +126,3 @@ Scheduling script work is useful to automatically update contents of user's data
 Use `crontab -e` and add to the end something like 
 `0 0 * * * jsub abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 0 10`.
 This example will run every day at the midnight - more detailed explanation is available after running `crontab -e`.
-
