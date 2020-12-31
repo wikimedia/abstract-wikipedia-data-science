@@ -2,7 +2,9 @@
 from fetch_content import *
 from db_script import encode_if_necessary
 
+import constants
 import utils.db_access as db_acc
+
 
 pymysql.converters.encoders[np.int64] = pymysql.converters.escape_int
 pymysql.converters.conversions = pymysql.converters.encoders.copy()
@@ -11,7 +13,7 @@ pymysql.converters.conversions.update(pymysql.converters.decoders)
 
 def get_only_db_pages(user_db_port=None, user=None, password=None):
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             SQL_Query = pd.read_sql_query("select page_id, dbname from Scripts where in_api = 0 and in_database = 1", conn)
             df = pd.DataFrame(SQL_Query).applymap(encode_if_necessary)
@@ -25,7 +27,7 @@ def get_only_db_pages(user_db_port=None, user=None, password=None):
 
 def remove_missed_contents(user_db_port=None, user=None, password=None):
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             cur.execute("delete from Scripts where is_missed=1")
         conn.commit()
