@@ -4,6 +4,17 @@ Repository for fetching and analyzing community functions from different Wikiped
 
 This project is Outreachy 21 task, more info can be found in [phabricator](https://phabricator.wikimedia.org/T263678). 
 
+### Description
+
+This project aims to find Scibunto modules with similar functions on different Wikimedia's wikis. 
+Highlighting such modules would allow storing them in more centralized manner, so the users wouldn't
+have to copy-paste them from one wiki to another, or "reinvent the wheel" trying to make a script with wanted 
+functionality.
+
+For reaching this goal, first all the Scribunto modules should be fetched from all the wikis and stored in more
+centralized fashion, along with additional data for analysis. Then through comparing different data, such as titles,
+usages and source codes, we expect to distinguish modules, which can be made centralized for better.
+
 ### How to use
 
 *1. Create Wikimedia developer account and create a new tool in Toolforge.*
