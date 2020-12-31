@@ -1,12 +1,8 @@
-# Create a python environment with the following commands
-# activate it and install dependencies
+# Create a python environment: python3 -mvenv venv
+# activate it: source venv/bin/activate
+# run init.sh
 
-# python3 -mvenv venv
-# source venv/bin/activate
-# pip install -r requirements.txt
 
-# Make script executable
-# chmod +x fetch_content.sh
 
 now=$(date +"%s")
 
@@ -21,11 +17,14 @@ then=$(date +"%s")
 diff=$((($then - $now)/60))
 echo "Took $diff minute(s) to run"
 
+
+
 # How to run this file:
+
 # run: crontab -e
 # add this to the end of the file: 0 0 * * * jsub fetch_content.sh 1 10
 # 1, 10 are the indices that you need to change in each command.
-# The crontab will have 50 of these files running...
+# The crontab can have 50 of these files running from toolforge
 
 # Or to run instantly: jsub fetch_content.sh 1 10
 
