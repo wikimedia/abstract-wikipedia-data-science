@@ -1,4 +1,5 @@
 toolforge
 mwapi
 pandas
-
+PyMySQL
+numpy

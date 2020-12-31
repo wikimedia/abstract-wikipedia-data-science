@@ -8,6 +8,7 @@ import numpy as np
 import argparse
 from urllib.parse import unquote
 import utils.db_access as db_acc
+import constants
 
 pymysql.converters.encoders[np.int64] = pymysql.converters.escape_int
 pymysql.converters.conversions = pymysql.converters.encoders.copy()
@@ -15,12 +16,21 @@ pymysql.converters.conversions.update(pymysql.converters.decoders)
 
 ## define constants
 MIN_IDX = 0
-DATABASE_NAME = 's54588__data'
 
 
 def get_wiki_list(start_idx, end_idx, user_db_port=None, user=None, password=None):
+    """
+    Fetches urls of all wikis and chooses the ones in the given indexes (both start and end indexes are included).
+
+    :param start_idx: starting index of the wikis, which should be processed.
+    :param end_idx: starting index of the wikis, which should be processed.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: list of wikis' urls within given indexes
+    """
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             cur.execute("select url from Sources where url is not NULL")  # all, except 'meta'
             ret = [wiki[0] for wiki in cur][start_idx:end_idx + 1]
@@ -43,7 +53,7 @@ def save_content(wiki, data_list, in_api, in_database, user_db_port=None, user=N
         "length = %s, content_model = %s, lastrevid = %s, url = %s, is_missed=%s"
         )
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             cur.execute("select dbname from Sources where url = %s", wiki)
             dbname = cur.fetchone()[0]
@@ -70,7 +80,7 @@ def save_missed_content(wiki, missed, user_db_port=None, user=None, password=Non
              "on duplicate key update in_api = %s, is_missed = %s"
              )
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             cur.execute("select dbname from Sources where url = %s", wiki)
             dbname = cur.fetchone()[0]
@@ -88,15 +98,23 @@ def needs_update(wiki, pageid, title, touched, revid):
 
 
 def get_contents(wikis, revise=False, user_db_port=None, user=None, password=None):
-    '''
-    revise: `False` collects all contents and saves fresh
-            `True` only collects those that have been edited
+    """
+    Connects to the wiki by using API, fetches Scribunto modules and additional info from there
+    and saves them to the user's database.
 
     Possible ways for the process to fail:
     1. Failed to connect to wiki (See from output)
     2. Connected but could not GET wiki (See from output)
     3. Could not grab a page (Listed in missed pages)
-    '''
+
+    :param wikis: list of urls of wikis, from which the modules will be collected
+    :param revise: `False` collects all contents and saves fresh
+            `True` only collects those that have been edited
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
     user_agent = toolforge.set_user_agent('abstract-wiki-ds')
     for wiki in wikis:
         try:
@@ -183,6 +201,18 @@ def get_contents(wikis, revise=False, user_db_port=None, user=None, password=Non
 
 
 def get_db_map(wikis=[], dbs=[], user_db_port=None, user=None, password=None):
+    """
+    Fetches info from the users database about the wikis with given dbnames or urls.
+    Chooses search by urls by default, if none are given (wikis is empty), searches by dbnames from dbs.
+
+    :param wikis: list of wikis' urls, whose info needed.
+    :param dbs:  list of wikis' dbnames, whose info needed.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: dictionary of fetched info in form {dbname1: url1, dbname2:url2,...};
+    string with all urls or dbnames which were given as input, separated by comma.
+    """
     query_input = []
 
     if len(wikis) > 0:
@@ -197,7 +227,7 @@ def get_db_map(wikis=[], dbs=[], user_db_port=None, user=None, password=None):
     db_map = {}
 
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             cur.execute(query, query_input)
             db_map = {data[0]: data[1] for data in cur}
@@ -210,10 +240,18 @@ def get_db_map(wikis=[], dbs=[], user_db_port=None, user=None, password=None):
 
 
 def get_pages(df, in_api, in_database, user_db_port=None, user=None, password=None):
-    '''
-    df columns: page_id, dbname, wiki
-    dbname not required
-    '''
+    """
+    Connects to the wikis from wiki field and fetches infomation for the pages with given page_id,
+    then saving fetched content and missing content to the user's database.
+
+    :param df: dataframe with columns page_id, dbname, wiki (represents url of wiki). dbname is not required.
+    :param in_api: the value to which in_api field will be set
+    :param in_database: the value to which in_database field will be set
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
     user_agent = toolforge.set_user_agent('abstract-wiki-ds')
     for wiki, w_df in df.groupby('wiki'):
         try:
@@ -271,7 +309,7 @@ def get_missed_contents(wikis, user_db_port=None, user=None, password=None):
     query = ("select page_id, dbname from Scripts where dbname in (%s) and in_api=1 and is_missed=1" % placeholders)
 
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             cur.execute(query, list(db_map.keys()))
             df = pd.DataFrame(cur, columns=['page_id', 'dbname'])
