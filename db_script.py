@@ -3,9 +3,7 @@ import pandas as pd
 import argparse
 
 import utils.db_access as db_acc
-
-
-DATABASE_NAME = 's54588__data'
+import constants
 
 
 def save_to_db(entries, db, user_db_port=None, user=None, password=None):
@@ -14,7 +12,7 @@ def save_to_db(entries, db, user_db_port=None, user=None, password=None):
              "on duplicate key update in_database = %s"
              )
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             for index, elem in entries.iterrows():
                 cur.execute(query,
@@ -34,7 +32,7 @@ def encode_if_necessary(b):
 
 def get_dbs(user_db_port=None, user=None, password=None):
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             cur.execute("select dbname from Sources where url is not NULL")  # all, except 'meta'
             ret = [db[0] for db in cur]

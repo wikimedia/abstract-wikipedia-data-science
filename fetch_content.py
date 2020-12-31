@@ -8,6 +8,7 @@ import numpy as np
 import argparse
 
 import utils.db_access as db_acc
+import constants
 
 pymysql.converters.encoders[np.int64] = pymysql.converters.escape_int
 pymysql.converters.conversions = pymysql.converters.encoders.copy()
@@ -15,7 +16,6 @@ pymysql.converters.conversions.update(pymysql.converters.decoders)
 
 ## define constants
 MIN_IDX = 0
-DATABASE_NAME = 's54588__data'
 
 
 def get_wiki_list(start_idx, end_idx, user_db_port=None, user=None, password=None):
@@ -30,7 +30,7 @@ def get_wiki_list(start_idx, end_idx, user_db_port=None, user=None, password=Non
     :return: list of wikis' urls within given indexes
     """
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             cur.execute("select url from Sources where url is not NULL")  # all, except 'meta'
             ret = [wiki[0] for wiki in cur][start_idx:end_idx + 1]
@@ -53,7 +53,7 @@ def save_content(wiki, data_list, in_api, in_database, user_db_port=None, user=N
         "length = %s, content_model = %s, lastrevid = %s, url = %s, is_missed=%s"
         )
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             cur.execute("select dbname from Sources where url = %s", wiki)
             dbname = cur.fetchone()[0]
@@ -80,7 +80,7 @@ def save_missed_content(wiki, missed, user_db_port=None, user=None, password=Non
              "on duplicate key update in_api = %s, is_missed = %s"
              )
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             cur.execute("select dbname from Sources where url = %s", wiki)
             dbname = cur.fetchone()[0]
@@ -227,7 +227,7 @@ def get_db_map(wikis=[], dbs=[], user_db_port=None, user=None, password=None):
     db_map = {}
 
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             cur.execute(query, query_input)
             db_map = {data[0]: data[1] for data in cur}
@@ -309,7 +309,7 @@ def get_missed_contents(wikis, user_db_port=None, user=None, password=None):
     query = ("select page_id, dbname from Scripts where dbname in (%s) and in_api=1 and is_missed=1" % placeholders)
 
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             cur.execute(query, list(db_map.keys()))
             df = pd.DataFrame(cur, columns=['page_id', 'dbname'])

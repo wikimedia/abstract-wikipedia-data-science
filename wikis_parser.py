@@ -2,9 +2,7 @@
 import argparse
 
 import utils.db_access as db_acc
-
-
-DATABASE_NAME = 's54588__data'
+import constants
 
 
 def get_wikipages_from_db(replicas_port=None, user=None, password=None):
@@ -64,7 +62,7 @@ def save_links_to_db(entries, user_db_port=None, user=None, password=None):
     query = ("insert into Sources(dbname, url) values(%s, %s)\n"
              "on duplicate key update url = %s")
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             for elem in entries:
                 cur.execute(query, [elem[0], elem[1], elem[1]])
@@ -91,7 +89,7 @@ def get_last_update_local_db(user_db_port=None, user=None, password=None):
     update_time = None
 
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             cur.execute(query)
             update_time = cur.fetchone()[0]
@@ -115,7 +113,7 @@ def update_local_db(update_time, user_db_port=None, user=None, password=None):
              "on duplicate key update update_time = %s"
              )
     try:
-        conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+        conn = db_acc.connect_to_user_database(constants.DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             time = update_time.strftime('%Y-%m-%d %H:%M:%S')
             cur.execute(query, [time, time])
