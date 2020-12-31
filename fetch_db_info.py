@@ -246,7 +246,7 @@ def get_categories_info(db, replicas_port=None, user=None, password=None):
     ## We can list it ourselves, but then again it varies according to language.
     ## If required, use the category table to identify important categories
 
-    q = (
+    query = (
         "SELECT page_id, COUNT(DISTINCT cl_to) AS categories "
         "FROM page "
         "INNER JOIN categorylinks "
@@ -261,7 +261,7 @@ def get_categories_info(db, replicas_port=None, user=None, password=None):
 def get_edit_protection_info(db, replicas_port=None, user=None, password=None):
     ## Protection level for `edit` for the modules
 
-    q = ("SELECT page_id, pr_level AS pr_level_edit FROM page_restrictions "
+    query = ("SELECT page_id, pr_level AS pr_level_edit FROM page_restrictions "
         "INNER JOIN page "
         "    ON page_id=pr_page "
         "    AND page_namespace=828 "
@@ -274,7 +274,7 @@ def get_edit_protection_info(db, replicas_port=None, user=None, password=None):
 def get_move_protection_info(db, replicas_port=None, user=None, password=None):
     ## Protection level for `move` for the modules
 
-    q = ("SELECT page_id, pr_level AS pr_level_move FROM page_restrictions "
+    query = ("SELECT page_id, pr_level AS pr_level_move FROM page_restrictions "
         "INNER JOIN page "
         "    ON page_id=pr_page "
         "    AND page_namespace=828 "
@@ -288,7 +288,7 @@ def get_most_common_tag_info(db, replicas_port=None, user=None, password=None):
     ## Comma separated most common tag names for each page
     ## See the inline view (subquery) for details on each page
 
-    q = (
+    query = (
     "SELECT tagcount.page_id, GROUP_CONCAT(ctd_name) AS tags "
     "FROM "
         "(SELECT page_id, ctd_name, COUNT(*) AS tags "
