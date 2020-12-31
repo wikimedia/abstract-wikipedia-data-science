@@ -21,7 +21,7 @@ def sql_to_df(query, db=None, user_db_port=None, replicas_port=None, user=None, 
             db = DATABASE_NAME
 
         with conn.cursor() as cur:
-            cur.execute("use "+db)
+            cur.execute("USE "+db)
             SQL_Query = pd.read_sql_query(query, conn)
             df = pd.DataFrame(SQL_Query).applymap(encode_if_necessary)
         conn.close()
@@ -38,9 +38,9 @@ def save_df(df, dbname, user_db_port=None, user=None, password=None):
     updates = ','.join([col+'=%s' for col in cols])
 
     query = (
-        "insert into Scripts(%s) values(%s) "
-        "on duplicate key update %s "
-        "where dbname=%s and page_id=%s " % (colnames, placeholders, updates, dbname, '%s')
+        "INSERT INTO Scripts(%s) VALUES(%s) "
+        "ON DUPLICATE KEY UPDATE %s "
+        "WHERE dbname=%s AND page_id=%s " % (colnames, placeholders, updates, dbname, '%s')
         )
 
     try:
@@ -72,8 +72,8 @@ def get_interwiki(user_db_port=None, user=None, password=None):
 
     ## Save interwiki mapping to user_db
     query = (
-        "insert into Interwiki(prefix, url) values(%s, %s) "
-        "on duplicate key update url = %s"
+        "INSERT INTO Interwiki(prefix, url) VALUES(%s, %s) "
+        "ON DUPLICATE KEY UPDATE url = %s"
         )
     try:
         conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
@@ -94,7 +94,7 @@ def get_revision_info(db, replicas_port=None, user=None, password=None):
                 "SELECT page_id, "
                 "COUNT(rev_page) AS edits, SUM(rev_minor_edit) AS minor_edits, "
                 "MIN(rev_timestamp) AS first_edit, MAX(rev_timestamp) AS last_edit, "
-                "SUM(case when actor_user is null then 1 else 0 end) AS anonymous_edits, "
+                "SUM(CASE WHEN actor_user IS NULL THEN 1 ELSE 0 END) AS anonymous_edits, "
                 "COUNT(DISTINCT actor_user) AS editors "
                 "FROM page "
                 "INNER JOIN revision "
@@ -117,21 +117,21 @@ def get_iwlinks_info(db, user_db_port=None, replicas_port=None, user=None, passw
     So, url was matched with iwl_title
     """
 
-    init_query = ("drop table if exists 'Iwlinks'")  
+    init_query = ("DROP TABLE IF EXISTS 'Iwlinks'")  
     create_query = (
-        "create table Iwlinks ("
-        "    iwl_from int unsigned, "
-        "    iwl_prefix varchar(32), "
-        "    iwl_title text, "
-        "    primary key (iwl_from, iwl_prefix, iwl_title)"
+        "CREATE TABLE Iwlinks ("
+        "    iwl_from INT UNSIGNED, "
+        "    iwl_prefix VARCHAR(32), "
+        "    iwl_title TEXT, "
+        "    PRIMARY KEY (iwl_from, iwl_prefix, iwl_title)"
         ")"
         )
     insert_query = (
-        "insert into Iwlinks(iwl_from, iwl_prefix, iwl_titile) "
-        "values(%s, %s, %s) "
-        "on duplicate key update iwl_title = %s"
+        "INSERT INTO Iwlinks(iwl_from, iwl_prefix, iwl_titile) "
+        "VALUES(%s, %s, %s) "
+        "ON DUPLICATE KEY UPDATE iwl_title = %s"
         )
-    drop_query = ("drop table Iwlinks")
+    drop_query = ("DROP TABLE Iwlinks")
     query = (
             "SELECT page_id, dbname, COUNT(DISTINCT iwl_from) AS iwls "
             "FROM Scripts "
@@ -152,8 +152,8 @@ def get_iwlinks_info(db, user_db_port=None, replicas_port=None, user=None, passw
         with conn_db.cursor() as db_cur, conn.cursor() as cur:
             db_cur.execute(init_query)
             db_cur.execute(create_query)
-            cur.execute("use "+db+'_p')
-            cur.execute("select * from iwlinks")
+            cur.execute("USE "+db+'_p')
+            cur.execute("SELECT * FROM iwlinks")
             for val in cur:
                 db_cur.execute(insert_query, [val[0], val[1], val[2], val[2]])
             df = sql_to_df(query=query, user_db_port=user_db_port, user=user, password=password)          
@@ -171,7 +171,7 @@ def get_pagelinks_info(db, replicas_port=None, user=None, password=None):
 
     query = (
                 "SELECT page_id, "
-                "COUNT(DISTINCT pl_from) as pls "
+                "COUNT(DISTINCT pl_from) AS pls "
                 "FROM page "
                 "INNER JOIN pagelinks "
                 "    ON page_title=pl_title "
@@ -203,7 +203,7 @@ def get_templatelinks_info(db, replicas_port=None, user=None, password=None):
 
     query = (
             "SELECT page_id, "
-            "COUNT(DISTINCT tl_from) as transcluded_in "
+            "COUNT(DISTINCT tl_from) AS transcluded_in "
             "FROM page "
             "INNER JOIN templatelinks "
             "    ON page_title=tl_title "
@@ -221,7 +221,7 @@ def get_transclusions_info(db, replicas_port=None, user=None, password=None):
     ## The query makes sure both from and to pages are Scribunto modules
 
     query = (
-            "SELECT tl_from, COUNT(DISTINCT tl_title) as transclusions "
+            "SELECT tl_from, COUNT(DISTINCT tl_title) AS transclusions "
             "FROM page "
             "INNER JOIN templatelinks "
             "    ON page_id=tl_from "
@@ -289,38 +289,39 @@ def get_most_common_tag_info(db, replicas_port=None, user=None, password=None):
     ## See the inline view (subquery) for details on each page
 
     q = (
-    "select tagcount.page_id, GROUP_CONCAT(ctd_name) as tags "
-    "from "
-        "(select page_id, ctd_name, count(*) as tags "
-         "from change_tag "
-         "inner join change_tag_def "
-         "on ct_tag_id=ctd_id "
-         "inner join revision "
-         "on ct_rev_id=rev_id "
-         "inner join page "
-         "on rev_page=page_id "
-         "and page_namespace=828 "
-         "and page_content_model='Scribunto' "
-         "group by page_id, ctd_name "
-         ") as tagcount "
-    "inner join "
-         "(select page_id, max(tags) as most_common_tag_count from "
-            "(select page_id, ctd_name, count(*) as tags "
-            "from change_tag "
-            "inner join change_tag_def "
-            "on ct_tag_id=ctd_id "
-            "inner join revision "
-            "on ct_rev_id=rev_id "
-            "inner join page "
-            "on rev_page=page_id "
-            "and page_namespace=828 "
-            "and page_content_model='Scribunto' "
-            "group by page_id, ctd_name "
-            ") as tagcount "
-        "group by page_id) as mosttag "
-        "on mosttag.page_id=tagcount.page_id "
-        "and tagcount.tags=mosttag.most_common_tag_count "
-    "group by tagcount.page_id"
+    "SELECT tagcount.page_id, GROUP_CONCAT(ctd_name) AS tags "
+    "FROM "
+        "(SELECT page_id, ctd_name, COUNT(*) AS tags "
+         "FROM change_tag "
+         "INNER JOIN change_tag_def "
+            "ON ct_tag_id=ctd_id "
+         "INNER JOIN revision "
+            "ON ct_rev_id=rev_id "
+         "INNER JOIN page "
+            "ON rev_page=page_id "
+            "AND page_namespace=828 "
+            "AND page_content_model='Scribunto' "
+         "GROUP BY page_id, ctd_name "
+         ") AS tagcount "
+    "INNER JOIN "
+         "(SELECT page_id, MAX(tags) AS most_common_tag_count "
+         "FROM "
+            "(SELECT page_id, ctd_name, COUNT(*) AS tags "
+            "FROM change_tag "
+            "INNER JOIN change_tag_def "
+                "ON ct_tag_id=ctd_id "
+            "INNER JOIN revision "
+                "ON ct_rev_id=rev_id "
+            "INNER JOIN page "
+                "ON rev_page=page_id "
+                "AND page_namespace=828 "
+                "AND page_content_model='Scribunto' "
+            "GROUP BY page_id, ctd_name "
+            ") AS tagcount "
+        "GROUP BY page_id) AS mosttag "
+        "ON mosttag.page_id=tagcount.page_id "
+        "AND tagcount.tags=mosttag.most_common_tag_count "
+    "GROUP BY tagcount.page_id"
     )
 
     return sql_to_df(db=db, query=query, replicas_port=replicas_port, user=user, password=password)
