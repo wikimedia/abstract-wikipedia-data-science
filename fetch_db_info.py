@@ -17,14 +17,15 @@ pymysql.converters.conversions.update(pymysql.converters.decoders)
 ## Utils
 
 
-def sql_to_df(
+def query_data(
     query,
     db=None,
-    user_db_port=None,
     replicas_port=None,
+    user_db_port=None,
     user=None,
     password=None,
     replicas=True,
+    save=True,
 ):
     try:
         if replicas:
@@ -37,8 +38,17 @@ def sql_to_df(
             )
 
         with conn.cursor() as cur:
-            SQL_Query = pd.read_sql_query(query, conn)
-            df = pd.DataFrame(SQL_Query).applymap(encode_if_necessary)
+            for df in pd.read_sql(query, conn, chunksize=500):
+                if save:
+                    save_data(
+                        df.applymap(encode_if_necessary),
+                        db,
+                        user_db_port,
+                        user,
+                        password,
+                    )
+                else:
+                    yield df
         conn.close()
         return df
     except Exception as err:
@@ -46,7 +56,7 @@ def sql_to_df(
         exit(1)
 
 
-def save_df(df, dbname, user_db_port=None, user=None, password=None):
+def save_data(df, dbname, user_db_port=None, user=None, password=None):
 
     cols = df.columns.values[1:]  # skip page_id
     updates = ",".join([col + "=%s" for col in cols])
@@ -112,7 +122,9 @@ def get_interwiki(user_db_port=None, user=None, password=None):
 ## Get info from DB
 
 
-def get_revision_info(db, replicas_port=None, user=None, password=None):
+def get_revision_info(
+    db, replicas_port=None, user_db_port=None, user=None, password=None
+):
     ## Number of revisions and information info about edits of the Scribunto modules
     query = (
         "SELECT page_id, "
@@ -129,13 +141,18 @@ def get_revision_info(db, replicas_port=None, user=None, password=None):
         "    ON rev_actor=actor_id "
         "GROUP BY page_id limit 5"
     )
-    return sql_to_df(
-        db=db, query=query, replicas_port=replicas_port, user=user, password=password
+    query_data(
+        query=query,
+        db=db,
+        replicas_port=replicas_port,
+        user_db_port=user_db_port,
+        user=user,
+        password=password,
     )
 
 
 def get_iwlinks_info(
-    db, user_db_port=None, replicas_port=None, user=None, password=None
+    db, replicas_port=None, user_db_port=None, user=None, password=None
 ):
     ## Number of inter wiki pages that referenced a module
     ## iwls from other dbs need to be added for each module
@@ -179,15 +196,25 @@ def get_iwlinks_info(
         conn_db = db_acc.connect_to_user_database(
             DATABASE_NAME, user_db_port, user, password
         )
-        conn = db_acc.connect_to_replicas_database(db, replicas_port, user, password)
-        with conn_db.cursor() as db_cur, conn.cursor() as cur:
+        with conn_db.cursor() as db_cur:
             db_cur.execute(init_query)
             db_cur.execute(create_query)
-            cur.execute("SELECT * FROM iwlinks")
-            for val in cur:
-                db_cur.execute(insert_query, [val[0], val[1], val[2], val[2]])
-            df = sql_to_df(
+            for df in query_data(
+                query="SELECT * FROM iwlinks",
+                db=db,
+                replicas_port=replicas_port,
+                user_db_port=user_db_port,
+                user=user,
+                password=password,
+                save=False,
+            ):
+                for index, elem in df.iterrows():
+                    params = list(np.concatenate((elem.values, elem.values[-1:])))
+                    db_cur.execute(insert_query, params)
+            query_data(
                 query=query,
+                db=DATABASE_NAME,
+                replicas_port=replicas_port,
                 user_db_port=user_db_port,
                 user=user,
                 password=password,
@@ -196,14 +223,14 @@ def get_iwlinks_info(
             db_cur.execute(drop_query)
         conn_db.commit()
         conn_db.close()
-        conn.close()
-        return df
     except Exception as err:
         print("Something went wrong.\n", err)
         exit(1)
 
 
-def get_pagelinks_info(db, replicas_port=None, user=None, password=None):
+def get_pagelinks_info(
+    db, replicas_port=None, user_db_port=None, user=None, password=None
+):
     ## Number of (in-wiki) pages that referenced a module
 
     query = (
@@ -217,12 +244,19 @@ def get_pagelinks_info(db, replicas_port=None, user=None, password=None):
         "    AND pl_namespace=828 "
         "GROUP BY page_id limit 5"
     )
-    return sql_to_df(
-        db=db, query=query, replicas_port=replicas_port, user=user, password=password
+    query_data(
+        query=query,
+        db=db,
+        replicas_port=replicas_port,
+        user_db_port=user_db_port,
+        user=user,
+        password=password,
     )
 
 
-def get_langlinks_info(db, replicas_port=None, user=None, password=None):
+def get_langlinks_info(
+    db, replicas_port=None, user_db_port=None, user=None, password=None
+):
     ## Number of languages links a module has (ll)
     ## Number of languages a module is available in (ll+1)
     ## Use the langlink table more to find out language independent subset of modules
@@ -236,12 +270,19 @@ def get_langlinks_info(db, replicas_port=None, user=None, password=None):
         "    AND page_content_model='Scribunto' "
         "GROUP BY page_id limit 5"
     )
-    return sql_to_df(
-        db=db, query=query, replicas_port=replicas_port, user=user, password=password
+    query_data(
+        query=query,
+        db=db,
+        replicas_port=replicas_port,
+        user_db_port=user_db_port,
+        user=user,
+        password=password,
     )
 
 
-def get_templatelinks_info(db, replicas_port=None, user=None, password=None):
+def get_templatelinks_info(
+    db, replicas_port=None, user_db_port=None, user=None, password=None
+):
     ## Number of transclusions of a module
 
     query = (
@@ -255,12 +296,19 @@ def get_templatelinks_info(db, replicas_port=None, user=None, password=None):
         "    AND tl_namespace=828 "
         "GROUP BY page_id limit 5"
     )
-    return sql_to_df(
-        db=db, query=query, replicas_port=replicas_port, user=user, password=password
+    query_data(
+        query=query,
+        db=db,
+        replicas_port=replicas_port,
+        user_db_port=user_db_port,
+        user=user,
+        password=password,
     )
 
 
-def get_transclusions_info(db, replicas_port=None, user=None, password=None):
+def get_transclusions_info(
+    db, replicas_port=None, user_db_port=None, user=None, password=None
+):
     ## Number of modules transcluded in a module
     ## this includes docs and other stuffs too
     ## so we need to filter by namespace and content_model
@@ -284,12 +332,19 @@ def get_transclusions_info(db, replicas_port=None, user=None, password=None):
         "GROUP BY tl_from limit 5"
     )
 
-    return sql_to_df(
-        db=db, query=query, replicas_port=replicas_port, user=user, password=password
+    query_data(
+        query=query,
+        db=db,
+        replicas_port=replicas_port,
+        user_db_port=user_db_port,
+        user=user,
+        password=password,
     )
 
 
-def get_categories_info(db, replicas_port=None, user=None, password=None):
+def get_categories_info(
+    db, replicas_port=None, user_db_port=None, user=None, password=None
+):
     ## Number of categories a module is included in
     ## There is not concrete list of categores to look for.
     ## We can list it ourselves, but then again it varies according to language.
@@ -305,12 +360,19 @@ def get_categories_info(db, replicas_port=None, user=None, password=None):
         "GROUP BY page_id limit 5"
     )
 
-    return sql_to_df(
-        db=db, query=query, replicas_port=replicas_port, user=user, password=password
+    query_data(
+        query=query,
+        db=db,
+        replicas_port=replicas_port,
+        user_db_port=user_db_port,
+        user=user,
+        password=password,
     )
 
 
-def get_edit_protection_info(db, replicas_port=None, user=None, password=None):
+def get_edit_protection_info(
+    db, replicas_port=None, user_db_port=None, user=None, password=None
+):
     ## Protection level for `edit` for the modules
 
     query = (
@@ -322,12 +384,19 @@ def get_edit_protection_info(db, replicas_port=None, user=None, password=None):
         "    AND pr_type='edit' limit 5"
     )
 
-    return sql_to_df(
-        db=db, query=query, replicas_port=replicas_port, user=user, password=password
+    query_data(
+        query=query,
+        db=db,
+        replicas_port=replicas_port,
+        user_db_port=user_db_port,
+        user=user,
+        password=password,
     )
 
 
-def get_move_protection_info(db, replicas_port=None, user=None, password=None):
+def get_move_protection_info(
+    db, replicas_port=None, user_db_port=None, user=None, password=None
+):
     ## Protection level for `move` for the modules
 
     query = (
@@ -339,12 +408,19 @@ def get_move_protection_info(db, replicas_port=None, user=None, password=None):
         "    AND pr_type='move' limit 5"
     )
 
-    return sql_to_df(
-        db=db, query=query, replicas_port=replicas_port, user=user, password=password
+    query_data(
+        query=query,
+        db=db,
+        replicas_port=replicas_port,
+        user_db_port=user_db_port,
+        user=user,
+        password=password,
     )
 
 
-def get_most_common_tag_info(db, replicas_port=None, user=None, password=None):
+def get_most_common_tag_info(
+    db, replicas_port=None, user_db_port=None, user=None, password=None
+):
     ## Comma separated most common tag names for each page
     ## See the inline view (subquery) for details on each page
 
@@ -384,8 +460,13 @@ def get_most_common_tag_info(db, replicas_port=None, user=None, password=None):
         "GROUP BY tagcount.page_id limit 5"
     )
 
-    return sql_to_df(
-        db=db, query=query, replicas_port=replicas_port, user=user, password=password
+    query_data(
+        query=query,
+        db=db,
+        replicas_port=replicas_port,
+        user_db_port=user_db_port,
+        user=user,
+        password=password,
     )
 
 
@@ -394,47 +475,38 @@ def get_data(replicas_port=None, user_db_port=None, user=None, password=None):
     dbs = get_dbs(user_db_port, user, password)
 
     for db in dbs:
-        df = get_revision_info(db, replicas_port, user, password)
-        save_df(df, db, user_db_port, user, password)
+        get_revision_info(db, replicas_port, user_db_port, user, password)
         print("     Loaded revision table for", db)
 
-        df = get_iwlinks_info(db, user_db_port, replicas_port, user, password)
-        save_df(df, db, user_db_port, user, password)
+        get_iwlinks_info(db, replicas_port, user_db_port, user, password)
         print("     Loaded iwlinks table for", db)
 
-        df = get_pagelinks_info(db, replicas_port, user, password)
-        save_df(df, db, user_db_port, user, password)
+        get_pagelinks_info(db, replicas_port, user_db_port, user, password)
         print("     Loaded pagelinks table for", db)
 
-        df = get_langlinks_info(db, replicas_port, user, password)
-        save_df(df, db, user_db_port, user, password)
+        get_langlinks_info(db, replicas_port, user_db_port, user, password)
         print("     Loaded langlinks table for", db)
 
-        df = get_templatelinks_info(db, replicas_port, user, password)
-        save_df(df, db, user_db_port, user, password)
+        get_templatelinks_info(db, replicas_port, user_db_port, user, password)
         print("     Loaded templatelinks table for", db)
 
-        df = get_transclusions_info(db, replicas_port, user, password)
-        save_df(df, db, user_db_port, user, password)
+        get_transclusions_info(db, replicas_port, user_db_port, user, password)
         print("     Loaded transclusions for", db)
 
-        df = get_categories_info(db, replicas_port, user, password)
-        save_df(df, db, user_db_port, user, password)
+        get_categories_info(db, replicas_port, user_db_port, user, password)
         print("     Loaded categorylinks table for", db)
 
-        df = get_edit_protection_info(db, replicas_port, user, password)
-        save_df(df, db, user_db_port, user, password)
+        get_edit_protection_info(db, replicas_port, user_db_port, user, password)
         print("     Loaded edit protection for", db)
 
-        df = get_move_protection_info(db, replicas_port, user, password)
-        save_df(df, db, user_db_port, user, password)
+        get_move_protection_info(db, replicas_port, user_db_port, user, password)
         print("     Loaded move protection for", db)
 
-        df = get_most_common_tag_info(db, replicas_port, user, password)
-        save_df(df, db, user_db_port, user, password)
+        get_most_common_tag_info(db, replicas_port, user_db_port, user, password)
         print("     Loaded tag table for", db)
 
         print("Finished loading data for", db)
+        break
 
     print("Done loading all data.")
 

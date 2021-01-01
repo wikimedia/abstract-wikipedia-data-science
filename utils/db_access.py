@@ -13,8 +13,9 @@ def connect_to_user_database(db_name, user_db_port=None, user=None, password=Non
     """
     try:
         if user_db_port:
-            conn = pymysql.connect(host='127.0.0.1', port=user_db_port,
-                                   user=user, password=password)
+            conn = pymysql.connect(
+                host="127.0.0.1", port=user_db_port, user=user, password=password
+            )
             with conn.cursor() as cur:
                 cur.execute("use " + db_name)
             conn.commit()
@@ -23,8 +24,8 @@ def connect_to_user_database(db_name, user_db_port=None, user=None, password=Non
 
         return conn
     except pymysql.err.OperationalError as err:
-        print('Failure: Please establish connection to Toolforge')
-        print('Error: ', err)
+        print("Failure: Please establish connection to Toolforge")
+        print("Error: ", err)
         exit(1)
 
 
@@ -39,10 +40,11 @@ def connect_to_replicas_database(db_name, replicas_port=None, user=None, passwor
     """
     try:
         if replicas_port:
-            conn = pymysql.connect(host='127.0.0.1', port=replicas_port,
-                                   user=user, password=password)
-            if db_name[-2:]!='_p':
-                db_name = db_name+'_p'
+            conn = pymysql.connect(
+                host="127.0.0.1", port=replicas_port, user=user, password=password
+            )
+            if db_name[-2:] != "_p":
+                db_name = db_name + "_p"
             with conn.cursor() as cur:
                 cur.execute("use " + db_name)
             conn.commit()
@@ -51,6 +53,6 @@ def connect_to_replicas_database(db_name, replicas_port=None, user=None, passwor
 
         return conn
     except pymysql.err.OperationalError as err:
-        print('Failure: Please establish connection to Toolforge')
-        print('Error: ', err)
+        print("Failure: Please establish connection to Toolforge")
+        print("Error: ", err)
         exit(1)
