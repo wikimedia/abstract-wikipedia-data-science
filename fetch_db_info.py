@@ -1,13 +1,13 @@
 import toolforge
 import pandas as pd
+import numpy as np
 import pymysql
 import argparse
 import mwapi
 
 import utils.db_access as db_acc
 from db_script import encode_if_necessary, get_dbs
-
-DATABASE_NAME = 's54588__data'
+from constants import DATABASE_NAME
 
 ## Utils
 
@@ -15,13 +15,10 @@ def sql_to_df(query, db=None, user_db_port=None, replicas_port=None, user=None, 
     try:
         if replicas:
             conn = db_acc.connect_to_replicas_database(db, replicas_port, user, password)
-            db = db+'_p'
         else:
             conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
-            db = DATABASE_NAME
 
         with conn.cursor() as cur:
-            cur.execute("USE "+db)
             SQL_Query = pd.read_sql_query(query, conn)
             df = pd.DataFrame(SQL_Query).applymap(encode_if_necessary)
         conn.close()
@@ -33,26 +30,25 @@ def sql_to_df(query, db=None, user_db_port=None, replicas_port=None, user=None, 
 def save_df(df, dbname, user_db_port=None, user=None, password=None):
 
     cols = df.columns.values[1:] # skip page_id
-    colnames = ','.join(cols)
-    placeholders = ','.join(['%s' for _ in cols])
     updates = ','.join([col+'=%s' for col in cols])
 
     query = (
-        "INSERT INTO Scripts(%s) VALUES(%s) "
-        "ON DUPLICATE KEY UPDATE %s "
-        "WHERE dbname=%s AND page_id=%s " % (colnames, placeholders, updates, dbname, '%s')
+        "UPDATE Scripts SET %s "
+        "WHERE dbname='%s' AND page_id=%s " % (updates, dbname, '%s')
         )
 
     try:
         conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
         with conn.cursor() as cur:
             for index, elem in df.iterrows():
-                cur.execute(query,np.concatenate((elem.values[1:], elem.values[1:], elem[0])))
+                params = list(np.concatenate((elem.values[1:], elem.values[0:1])))
+                cur.execute(query,params)
         conn.commit()
         conn.close()
     except Exception as err:
-        print('Error saving pages from', wiki)
+        print('Error saving pages from', dbname)
         print(err)
+        exit(1)
 
 ## Populate Interwiki
 
@@ -117,17 +113,17 @@ def get_iwlinks_info(db, user_db_port=None, replicas_port=None, user=None, passw
     So, url was matched with iwl_title
     """
 
-    init_query = ("DROP TABLE IF EXISTS 'Iwlinks'")  
+    init_query = ("DROP TABLE IF EXISTS Iwlinks")  
     create_query = (
         "CREATE TABLE Iwlinks ("
         "    iwl_from INT UNSIGNED, "
-        "    iwl_prefix VARCHAR(32), "
-        "    iwl_title TEXT, "
+        "    iwl_prefix VARCHAR(20), "
+        "    iwl_title VARCHAR(255), "
         "    PRIMARY KEY (iwl_from, iwl_prefix, iwl_title)"
         ")"
         )
     insert_query = (
-        "INSERT INTO Iwlinks(iwl_from, iwl_prefix, iwl_titile) "
+        "INSERT INTO Iwlinks(iwl_from, iwl_prefix, iwl_title) "
         "VALUES(%s, %s, %s) "
         "ON DUPLICATE KEY UPDATE iwl_title = %s"
         )
@@ -152,7 +148,6 @@ def get_iwlinks_info(db, user_db_port=None, replicas_port=None, user=None, passw
         with conn_db.cursor() as db_cur, conn.cursor() as cur:
             db_cur.execute(init_query)
             db_cur.execute(create_query)
-            cur.execute("USE "+db+'_p')
             cur.execute("SELECT * FROM iwlinks")
             for val in cur:
                 db_cur.execute(insert_query, [val[0], val[1], val[2], val[2]])
@@ -377,7 +372,11 @@ def get_data(replicas_port=None, user_db_port=None, user=None, password=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description=""
+        description="Gets information about Lua modules from multiple tables across the wiki."
+                    "To use from local PC, use flag --local and all the additional flags needed for "
+                    "establishing connection through ssh tunneling."
+                    "More help available at "
+                    "https://wikitech.wikimedia.org/wiki/Help:Toolforge/Database#SSH_tunneling_for_local_testing_which_makes_use_of_Wiki_Replica_databases"
     )
     parser.add_argument("--interwiki", "-iw", action="store_true",
                         help="Whether interwiki-table content should be re-fetched.")
@@ -385,7 +384,7 @@ if __name__ == "__main__":
                         help="Connection is initiated from local pc.")
     local_data = parser.add_argument_group(title="Info for connecting to Toolforge from local pc")
     local_data.add_argument("--replicas-port", "-r", type=int,
-                            help="Port for connecting to meta table through ssh tunneling, if used.")
+                            help="Port for connecting to meta table through ssh tunneling.")
     local_data.add_argument("--user-db-port", "-udb", type=int,
                             help="Port for connecting to tables, created by user in Toolforge, "
                                  "through ssh tunneling, if used.")
@@ -402,4 +401,4 @@ if __name__ == "__main__":
     else:
         if args.interwiki:
             get_interwiki(args.user_db_port, args.user, args.password)
-        get_data(args.replicas-port, args.user_db_port, args.user, args.password)
+        get_data(args.replicas_port, args.user_db_port, args.user, args.password)

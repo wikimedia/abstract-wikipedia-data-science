@@ -41,6 +41,8 @@ def connect_to_replicas_database(db_name, replicas_port=None, user=None, passwor
         if replicas_port:
             conn = pymysql.connect(host='127.0.0.1', port=replicas_port,
                                    user=user, password=password)
+            if db_name[-2:]!='_p':
+                db_name = db_name+'_p'
             with conn.cursor() as cur:
                 cur.execute("use " + db_name)
             conn.commit()

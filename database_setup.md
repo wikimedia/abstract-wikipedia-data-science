@@ -30,7 +30,7 @@ create table Scripts(
     minor_edits int,
     first_edit datetime,
     last_edit datetime,
-    anonymous_edit int,
+    anonymous_edits int,
     editors int,
     iwls int,
     pls int,
