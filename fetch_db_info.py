@@ -127,7 +127,7 @@ def get_revision_info(db, replicas_port=None, user=None, password=None):
         "    AND page_content_model='Scribunto' "
         "LEFT JOIN actor "
         "    ON rev_actor=actor_id "
-        "GROUP BY page_id"
+        "GROUP BY page_id limit 5"
     )
     return sql_to_df(
         db=db, query=query, replicas_port=replicas_port, user=user, password=password
@@ -172,7 +172,7 @@ def get_iwlinks_info(
         "        ON prefix=iwl_prefix "
         "    ) AS iwl "
         "ON url=iwl_url "
-        "GROUP BY page_id, dbname"
+        "GROUP BY page_id, dbname limit 5"
     )
 
     try:
@@ -215,7 +215,7 @@ def get_pagelinks_info(db, replicas_port=None, user=None, password=None):
         "    AND page_namespace=828 "
         "    AND page_content_model='Scribunto' "
         "    AND pl_namespace=828 "
-        "GROUP BY page_id"
+        "GROUP BY page_id limit 5"
     )
     return sql_to_df(
         db=db, query=query, replicas_port=replicas_port, user=user, password=password
@@ -234,7 +234,7 @@ def get_langlinks_info(db, replicas_port=None, user=None, password=None):
         "    ON ll_from=page_id "
         "    AND page_namespace=828 "
         "    AND page_content_model='Scribunto' "
-        "GROUP BY page_id "
+        "GROUP BY page_id limit 5"
     )
     return sql_to_df(
         db=db, query=query, replicas_port=replicas_port, user=user, password=password
@@ -253,7 +253,7 @@ def get_templatelinks_info(db, replicas_port=None, user=None, password=None):
         "    AND page_namespace=828 "
         "    AND page_content_model='Scribunto' "
         "    AND tl_namespace=828 "
-        "GROUP BY page_id"
+        "GROUP BY page_id limit 5"
     )
     return sql_to_df(
         db=db, query=query, replicas_port=replicas_port, user=user, password=password
@@ -281,7 +281,7 @@ def get_transclusions_info(db, replicas_port=None, user=None, password=None):
         "        FROM page "
         "        WHERE page_namespace=828 AND page_content_model='Scribunto' "
         "    ) "
-        "GROUP BY tl_from"
+        "GROUP BY tl_from limit 5"
     )
 
     return sql_to_df(
@@ -302,7 +302,7 @@ def get_categories_info(db, replicas_port=None, user=None, password=None):
         "    ON cl_from=page_id "
         "    AND page_namespace=828 "
         "    AND page_content_model='Scribunto' "
-        "GROUP BY page_id "
+        "GROUP BY page_id limit 5"
     )
 
     return sql_to_df(
@@ -319,7 +319,7 @@ def get_edit_protection_info(db, replicas_port=None, user=None, password=None):
         "    ON page_id=pr_page "
         "    AND page_namespace=828 "
         "    AND page_content_model='Scribunto' "
-        "    AND pr_type='edit'"
+        "    AND pr_type='edit' limit 5"
     )
 
     return sql_to_df(
@@ -336,7 +336,7 @@ def get_move_protection_info(db, replicas_port=None, user=None, password=None):
         "    ON page_id=pr_page "
         "    AND page_namespace=828 "
         "    AND page_content_model='Scribunto' "
-        "    AND pr_type='move'"
+        "    AND pr_type='move' limit 5"
     )
 
     return sql_to_df(
@@ -381,7 +381,7 @@ def get_most_common_tag_info(db, replicas_port=None, user=None, password=None):
         "GROUP BY page_id) AS mosttag "
         "ON mosttag.page_id=tagcount.page_id "
         "AND tagcount.tags=mosttag.most_common_tag_count "
-        "GROUP BY tagcount.page_id"
+        "GROUP BY tagcount.page_id limit 5"
     )
 
     return sql_to_df(
