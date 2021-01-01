@@ -50,10 +50,10 @@ def query_data(
                 else:
                     yield df
         conn.close()
+        print(shit)
         return df
     except Exception as err:
-        print("1 Something went wrong.\n", err)
-        exit(1)
+        print("Something went wrong. Could not query from %s \n" % db, err)
 
 
 def save_data(df, dbname, user_db_port=None, user=None, password=None):
@@ -115,7 +115,7 @@ def get_interwiki(user_db_port=None, user=None, password=None):
         conn.commit()
         conn.close()
     except Exception as err:
-        print("2 Something went wrong.\n", err)
+        print("Something went wrong.\n", err)
         exit(1)
 
 
@@ -139,7 +139,7 @@ def get_revision_info(
         "    AND page_content_model='Scribunto' "
         "LEFT JOIN actor "
         "    ON rev_actor=actor_id "
-        "GROUP BY page_id limit 5"
+        "GROUP BY page_id"
     )
     query_data(
         query=query,
@@ -189,7 +189,7 @@ def get_iwlinks_info(
         "        ON prefix=iwl_prefix "
         "    ) AS iwl "
         "ON url=iwl_url "
-        "GROUP BY page_id, dbname limit 5"
+        "GROUP BY page_id, dbname"
     )
 
     try:
@@ -224,7 +224,7 @@ def get_iwlinks_info(
         conn_db.commit()
         conn_db.close()
     except Exception as err:
-        print("3 Something went wrong.\n", err)
+        print("Something went wrong.\n", err)
         exit(1)
 
 
@@ -242,7 +242,7 @@ def get_pagelinks_info(
         "    AND page_namespace=828 "
         "    AND page_content_model='Scribunto' "
         "    AND pl_namespace=828 "
-        "GROUP BY page_id limit 5"
+        "GROUP BY page_id"
     )
     query_data(
         query=query,
@@ -268,7 +268,7 @@ def get_langlinks_info(
         "    ON ll_from=page_id "
         "    AND page_namespace=828 "
         "    AND page_content_model='Scribunto' "
-        "GROUP BY page_id limit 5"
+        "GROUP BY page_id"
     )
     query_data(
         query=query,
@@ -294,7 +294,7 @@ def get_templatelinks_info(
         "    AND page_namespace=828 "
         "    AND page_content_model='Scribunto' "
         "    AND tl_namespace=828 "
-        "GROUP BY page_id limit 5"
+        "GROUP BY page_id"
     )
     query_data(
         query=query,
@@ -329,7 +329,7 @@ def get_transclusions_info(
         "        FROM page "
         "        WHERE page_namespace=828 AND page_content_model='Scribunto' "
         "    ) "
-        "GROUP BY tl_from limit 5"
+        "GROUP BY tl_from"
     )
 
     query_data(
@@ -357,7 +357,7 @@ def get_categories_info(
         "    ON cl_from=page_id "
         "    AND page_namespace=828 "
         "    AND page_content_model='Scribunto' "
-        "GROUP BY page_id limit 5"
+        "GROUP BY page_id"
     )
 
     query_data(
@@ -381,7 +381,7 @@ def get_edit_protection_info(
         "    ON page_id=pr_page "
         "    AND page_namespace=828 "
         "    AND page_content_model='Scribunto' "
-        "    AND pr_type='edit' limit 5"
+        "    AND pr_type='edit'"
     )
 
     query_data(
@@ -405,7 +405,7 @@ def get_move_protection_info(
         "    ON page_id=pr_page "
         "    AND page_namespace=828 "
         "    AND page_content_model='Scribunto' "
-        "    AND pr_type='move' limit 5"
+        "    AND pr_type='move'"
     )
 
     query_data(
@@ -457,7 +457,7 @@ def get_most_common_tag_info(
         "GROUP BY page_id) AS mosttag "
         "ON mosttag.page_id=tagcount.page_id "
         "AND tagcount.tags=mosttag.most_common_tag_count "
-        "GROUP BY tagcount.page_id limit 5"
+        "GROUP BY tagcount.page_id"
     )
 
     query_data(
@@ -506,9 +506,8 @@ def get_data(replicas_port=None, user_db_port=None, user=None, password=None):
         print("     Loaded tag table for", db)
 
         print("Finished loading data for", db)
-        break
 
-    print("Done loading all data.")
+    print("Done loading all data")
 
 
 if __name__ == "__main__":
