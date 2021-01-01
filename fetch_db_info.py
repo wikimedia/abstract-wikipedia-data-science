@@ -52,7 +52,7 @@ def query_data(
         conn.close()
         return df
     except Exception as err:
-        print("Something went wrong.\n", err)
+        print("1 Something went wrong.\n", err)
         exit(1)
 
 
@@ -115,7 +115,7 @@ def get_interwiki(user_db_port=None, user=None, password=None):
         conn.commit()
         conn.close()
     except Exception as err:
-        print("Something went wrong.\n", err)
+        print("2 Something went wrong.\n", err)
         exit(1)
 
 
@@ -224,7 +224,7 @@ def get_iwlinks_info(
         conn_db.commit()
         conn_db.close()
     except Exception as err:
-        print("Something went wrong.\n", err)
+        print("3 Something went wrong.\n", err)
         exit(1)
 
 
