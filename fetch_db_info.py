@@ -9,6 +9,11 @@ import utils.db_access as db_acc
 from db_script import encode_if_necessary, get_dbs
 from constants import DATABASE_NAME
 
+pymysql.converters.encoders[np.int64] = pymysql.converters.escape_int
+pymysql.converters.conversions = pymysql.converters.encoders.copy()
+pymysql.converters.conversions.update(pymysql.converters.decoders)
+
+
 ## Utils
 
 
@@ -167,7 +172,7 @@ def get_iwlinks_info(
         "        ON prefix=iwl_prefix "
         "    ) AS iwl "
         "ON url=iwl_url "
-        "GROUP BY (page_id, dbname)"
+        "GROUP BY page_id, dbname"
     )
 
     try:
