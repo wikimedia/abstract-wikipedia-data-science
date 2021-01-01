@@ -80,7 +80,6 @@ def save_data(df, dbname, user_db_port=None, user=None, password=None):
     except Exception as err:
         print("Error saving pages from", dbname)
         print(err)
-        exit(1)
 
 
 ## Populate Interwiki
@@ -115,7 +114,7 @@ def get_interwiki(user_db_port=None, user=None, password=None):
         conn.commit()
         conn.close()
     except Exception as err:
-        print("Something went wrong.\n", err)
+        print("Something went wrong. Could not get interwiki table\n", err)
         exit(1)
 
 
@@ -224,8 +223,7 @@ def get_iwlinks_info(
         conn_db.commit()
         conn_db.close()
     except Exception as err:
-        print("Something went wrong.\n", err)
-        exit(1)
+        print("Something went wrong. Could not get iwlinks info of %s\n" % db, err)
 
 
 def get_pagelinks_info(
@@ -427,34 +425,38 @@ def get_most_common_tag_info(
     query = (
         "SELECT tagcount.page_id, GROUP_CONCAT(ctd_name) AS tags "
         "FROM "
-        "(SELECT page_id, ctd_name, COUNT(*) AS tags "
-        "FROM change_tag "
-        "INNER JOIN change_tag_def "
-        "ON ct_tag_id=ctd_id "
-        "INNER JOIN revision "
-        "ON ct_rev_id=rev_id "
-        "INNER JOIN page "
-        "ON rev_page=page_id "
-        "AND page_namespace=828 "
-        "AND page_content_model='Scribunto' "
-        "GROUP BY page_id, ctd_name "
+        "("
+        "    SELECT page_id, ctd_name, COUNT(*) AS tags "
+        "    FROM change_tag "
+        "    INNER JOIN change_tag_def "
+        "        ON ct_tag_id=ctd_id "
+        "    INNER JOIN revision "
+        "        ON ct_rev_id=rev_id "
+        "    INNER JOIN page "
+        "        ON rev_page=page_id "
+        "        AND page_namespace=828 "
+        "        AND page_content_model='Scribunto' "
+        "    GROUP BY page_id, ctd_name "
         ") AS tagcount "
         "INNER JOIN "
-        "(SELECT page_id, MAX(tags) AS most_common_tag_count "
-        "FROM "
-        "(SELECT page_id, ctd_name, COUNT(*) AS tags "
-        "FROM change_tag "
-        "INNER JOIN change_tag_def "
-        "ON ct_tag_id=ctd_id "
-        "INNER JOIN revision "
-        "ON ct_rev_id=rev_id "
-        "INNER JOIN page "
-        "ON rev_page=page_id "
-        "AND page_namespace=828 "
-        "AND page_content_model='Scribunto' "
-        "GROUP BY page_id, ctd_name "
-        ") AS tagcount "
-        "GROUP BY page_id) AS mosttag "
+        "("
+        "    SELECT page_id, MAX(tags) AS most_common_tag_count "
+        "    FROM "
+        "    ("
+        "        SELECT page_id, ctd_name, COUNT(*) AS tags "
+        "        FROM change_tag "
+        "        INNER JOIN change_tag_def "
+        "            ON ct_tag_id=ctd_id "
+        "        INNER JOIN revision "
+        "            ON ct_rev_id=rev_id "
+        "        INNER JOIN page "
+        "            ON rev_page=page_id "
+        "            AND page_namespace=828 "
+        "            AND page_content_model='Scribunto' "
+        "        GROUP BY page_id, ctd_name "
+        "    ) AS tagcount "
+        "    GROUP BY page_id"
+        ") AS mosttag "
         "ON mosttag.page_id=tagcount.page_id "
         "AND tagcount.tags=mosttag.most_common_tag_count "
         "GROUP BY tagcount.page_id"
