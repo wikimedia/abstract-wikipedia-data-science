@@ -38,7 +38,7 @@ def query_data(
             )
 
         with conn.cursor() as cur:
-            for df in pd.read_sql(query, conn, chunksize=500):
+            for df in pd.read_sql(query, conn, chunksize=100):
                 if save:
                     save_data(
                         df.applymap(encode_if_necessary),
