@@ -17,7 +17,7 @@ pymysql.converters.conversions.update(pymysql.converters.decoders)
 ## Utils
 
 
-def query_data(
+def query_data_generator(
     query,
     db=None,
     replicas_port=None,
@@ -25,9 +25,9 @@ def query_data(
     user=None,
     password=None,
     replicas=True,
-    save=True,
 ):
     try:
+
         if replicas:
             conn = db_acc.connect_to_replicas_database(
                 db, replicas_port, user, password
@@ -37,30 +37,24 @@ def query_data(
                 DATABASE_NAME, user_db_port, user, password
             )
 
-        with conn.cursor() as cur:
-            offset = 0
-            row_count = 500
-            while True:
-                df = pd.read_sql(
-                    query + " LIMIT %d OFFSET %d" % (row_count, offset), conn
-                ).applymap(encode_if_necessary)
-                offset += row_count
-                if len(df) == 0:
-                    break
-                if save:
-                    save_data(
-                        df,
-                        db,
-                        user_db_port,
-                        user,
-                        password,
-                    )
-                else:
-                    yield df
-        conn.close()
-        return df
+        cur = conn.cursor()
+
+        offset = 0
+        row_count = 500
+        while True:
+            df = pd.read_sql(
+                query + " LIMIT %d OFFSET %d" % (row_count, offset), conn
+            ).applymap(encode_if_necessary)
+            offset += row_count
+            if len(df) == 0:
+                return
+            yield df
+
     except Exception as err:
         print("Something went wrong. Could not query from %s \n" % db, err)
+
+    finally:
+        conn.close()
 
 
 def save_data(df, dbname, user_db_port=None, user=None, password=None):
@@ -68,7 +62,7 @@ def save_data(df, dbname, user_db_port=None, user=None, password=None):
     cols = df.columns.values[1:]  # skip page_id
     updates = ",".join([col + "=%s" for col in cols])
 
-    query = "UPDATE Scripts SET %s " "WHERE dbname='%s' AND page_id=%s " % (
+    query = "UPDATE Scripts SET %s WHERE dbname='%s' AND page_id=%s " % (
         updates,
         dbname,
         "%s",
@@ -85,8 +79,7 @@ def save_data(df, dbname, user_db_port=None, user=None, password=None):
         conn.commit()
         conn.close()
     except Exception as err:
-        print("Error saving pages from", dbname)
-        print(err)
+        print("Something went wrong. Error saving pages from %s \n" % dbname, err)
 
 
 ## Populate Interwiki
@@ -147,14 +140,11 @@ def get_revision_info(
         "    ON rev_actor=actor_id "
         "GROUP BY page_id"
     )
-    query_data(
-        query=query,
-        db=db,
-        replicas_port=replicas_port,
-        user_db_port=user_db_port,
-        user=user,
-        password=password,
-    )
+
+    for df in query_data_generator(
+        query, db, replicas_port, user_db_port, user, password
+    ):
+        save_data(df, db, user_db_port, user, password)
 
 
 def get_iwlinks_info(
@@ -203,30 +193,29 @@ def get_iwlinks_info(
             DATABASE_NAME, user_db_port, user, password
         )
         with conn_db.cursor() as db_cur:
+
             db_cur.execute(init_query)
             db_cur.execute(create_query)
-            for df in query_data(
+
+            for df in query_data_generator(
                 query="SELECT * FROM iwlinks",
                 db=db,
                 replicas_port=replicas_port,
                 user_db_port=user_db_port,
                 user=user,
                 password=password,
-                save=False,
             ):
                 for index, elem in df.iterrows():
                     params = list(np.concatenate((elem.values, elem.values[-1:])))
                     db_cur.execute(insert_query, params)
-            query_data(
-                query=query,
-                db=DATABASE_NAME,
-                replicas_port=replicas_port,
-                user_db_port=user_db_port,
-                user=user,
-                password=password,
-                replicas=False,
-            )
+
+            for df in query_data_generator(
+                query, DATABASE_NAME, replicas_port, user_db_port, user, password, False
+            ):
+                save_data(df, db, user_db_port, user, password)
+
             db_cur.execute(drop_query)
+
         conn_db.commit()
         conn_db.close()
     except Exception as err:
@@ -249,14 +238,11 @@ def get_pagelinks_info(
         "    AND pl_namespace=828 "
         "GROUP BY page_id"
     )
-    query_data(
-        query=query,
-        db=db,
-        replicas_port=replicas_port,
-        user_db_port=user_db_port,
-        user=user,
-        password=password,
-    )
+
+    for df in query_data_generator(
+        query, db, replicas_port, user_db_port, user, password
+    ):
+        save_data(df, db, user_db_port, user, password)
 
 
 def get_langlinks_info(
@@ -275,14 +261,11 @@ def get_langlinks_info(
         "    AND page_content_model='Scribunto' "
         "GROUP BY page_id"
     )
-    query_data(
-        query=query,
-        db=db,
-        replicas_port=replicas_port,
-        user_db_port=user_db_port,
-        user=user,
-        password=password,
-    )
+
+    for df in query_data_generator(
+        query, db, replicas_port, user_db_port, user, password
+    ):
+        save_data(df, db, user_db_port, user, password)
 
 
 def get_templatelinks_info(
@@ -301,14 +284,11 @@ def get_templatelinks_info(
         "    AND tl_namespace=828 "
         "GROUP BY page_id"
     )
-    query_data(
-        query=query,
-        db=db,
-        replicas_port=replicas_port,
-        user_db_port=user_db_port,
-        user=user,
-        password=password,
-    )
+
+    for df in query_data_generator(
+        query, db, replicas_port, user_db_port, user, password
+    ):
+        save_data(df, db, user_db_port, user, password)
 
 
 def get_transclusions_info(
@@ -337,14 +317,10 @@ def get_transclusions_info(
         "GROUP BY tl_from"
     )
 
-    query_data(
-        query=query,
-        db=db,
-        replicas_port=replicas_port,
-        user_db_port=user_db_port,
-        user=user,
-        password=password,
-    )
+    for df in query_data_generator(
+        query, db, replicas_port, user_db_port, user, password
+    ):
+        save_data(df, db, user_db_port, user, password)
 
 
 def get_categories_info(
@@ -365,14 +341,10 @@ def get_categories_info(
         "GROUP BY page_id"
     )
 
-    query_data(
-        query=query,
-        db=db,
-        replicas_port=replicas_port,
-        user_db_port=user_db_port,
-        user=user,
-        password=password,
-    )
+    for df in query_data_generator(
+        query, db, replicas_port, user_db_port, user, password
+    ):
+        save_data(df, db, user_db_port, user, password)
 
 
 def get_edit_protection_info(
@@ -389,14 +361,10 @@ def get_edit_protection_info(
         "    AND pr_type='edit'"
     )
 
-    query_data(
-        query=query,
-        db=db,
-        replicas_port=replicas_port,
-        user_db_port=user_db_port,
-        user=user,
-        password=password,
-    )
+    for df in query_data_generator(
+        query, db, replicas_port, user_db_port, user, password
+    ):
+        save_data(df, db, user_db_port, user, password)
 
 
 def get_move_protection_info(
@@ -413,14 +381,10 @@ def get_move_protection_info(
         "    AND pr_type='move'"
     )
 
-    query_data(
-        query=query,
-        db=db,
-        replicas_port=replicas_port,
-        user_db_port=user_db_port,
-        user=user,
-        password=password,
-    )
+    for df in query_data_generator(
+        query, db, replicas_port, user_db_port, user, password
+    ):
+        save_data(df, db, user_db_port, user, password)
 
 
 def get_most_common_tag_info(
@@ -469,14 +433,10 @@ def get_most_common_tag_info(
         "GROUP BY tagcount.page_id"
     )
 
-    query_data(
-        query=query,
-        db=db,
-        replicas_port=replicas_port,
-        user_db_port=user_db_port,
-        user=user,
-        password=password,
-    )
+    for df in query_data_generator(
+        query, db, replicas_port, user_db_port, user, password
+    ):
+        save_data(df, db, user_db_port, user, password)
 
 
 def get_data(
@@ -488,7 +448,6 @@ def get_data(
     for db in dbs:
         eval(function_name)(db, replicas_port, user_db_port, user, password)
         print("     Loaded %s for %s" % (function_name, db))
-        break
 
     print("Done loading all data")
 
