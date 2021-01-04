@@ -38,10 +38,18 @@ def query_data(
             )
 
         with conn.cursor() as cur:
-            for df in pd.read_sql(query, conn, chunksize=100):
+            offset = 0
+            row_count = 500
+            while True:
+                df = pd.read_sql(
+                    query + " LIMIT %d OFFSET %d" % (row_count, offset), conn
+                ).applymap(encode_if_necessary)
+                offset += row_count
+                if len(df) == 0:
+                    break
                 if save:
                     save_data(
-                        df.applymap(encode_if_necessary),
+                        df,
                         db,
                         user_db_port,
                         user,
