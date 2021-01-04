@@ -58,7 +58,6 @@ def query_data(
                 else:
                     yield df
         conn.close()
-        print(shit)
         return df
     except Exception as err:
         print("Something went wrong. Could not query from %s \n" % db, err)
@@ -480,42 +479,16 @@ def get_most_common_tag_info(
     )
 
 
-def get_data(replicas_port=None, user_db_port=None, user=None, password=None):
+def get_data(
+    function_name, replicas_port=None, user_db_port=None, user=None, password=None
+):
 
     dbs = get_dbs(user_db_port, user, password)
 
     for db in dbs:
-        get_revision_info(db, replicas_port, user_db_port, user, password)
-        print("     Loaded revision table for", db)
-
-        get_iwlinks_info(db, replicas_port, user_db_port, user, password)
-        print("     Loaded iwlinks table for", db)
-
-        get_pagelinks_info(db, replicas_port, user_db_port, user, password)
-        print("     Loaded pagelinks table for", db)
-
-        get_langlinks_info(db, replicas_port, user_db_port, user, password)
-        print("     Loaded langlinks table for", db)
-
-        get_templatelinks_info(db, replicas_port, user_db_port, user, password)
-        print("     Loaded templatelinks table for", db)
-
-        get_transclusions_info(db, replicas_port, user_db_port, user, password)
-        print("     Loaded transclusions for", db)
-
-        get_categories_info(db, replicas_port, user_db_port, user, password)
-        print("     Loaded categorylinks table for", db)
-
-        get_edit_protection_info(db, replicas_port, user_db_port, user, password)
-        print("     Loaded edit protection for", db)
-
-        get_move_protection_info(db, replicas_port, user_db_port, user, password)
-        print("     Loaded move protection for", db)
-
-        get_most_common_tag_info(db, replicas_port, user_db_port, user, password)
-        print("     Loaded tag table for", db)
-
-        print("Finished loading data for", db)
+        eval(function_name)(db, replicas_port, user_db_port, user, password)
+        print("     Loaded %s for %s" % (function_name, db))
+        break
 
     print("Done loading all data")
 
@@ -533,6 +506,16 @@ if __name__ == "__main__":
         "-iw",
         action="store_true",
         help="Whether interwiki-table content should be re-fetched.",
+    )
+    parser.add_argument(
+        "--function-name",
+        "-fn",
+        type=str,
+        help="Name of the function to run for all wikis. "
+        "One of get_revision_info, get_iwlinks_info, get_pagelinks_info, "
+        "get_langlinks_info, get_templatelinks_info, get_transclusions_info, "
+        "get_categories_info, get_edit_protection_info, get_move_protection_info, "
+        "get_most_common_tag_info",
     )
     parser.add_argument(
         "--local",
@@ -567,8 +550,14 @@ if __name__ == "__main__":
     if not args.local:
         if args.interwiki:
             get_interwiki()
-        get_data()
+        get_data(args.function_name)
     else:
         if args.interwiki:
             get_interwiki(args.user_db_port, args.user, args.password)
-        get_data(args.replicas_port, args.user_db_port, args.user, args.password)
+        get_data(
+            args.function_name,
+            args.replicas_port,
+            args.user_db_port,
+            args.user,
+            args.password,
+        )
