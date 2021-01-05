@@ -58,10 +58,17 @@ def query_data_generator(
 
 
 def save_data(
-    df, dbname, user_db_port=None, user=None, password=None, query=None, cols=None
+    df,
+    dbname,
+    user_db_port=None,
+    user=None,
+    password=None,
+    query=None,
+    cols=None,
+    custom=False,
 ):
 
-    if not query:
+    if not custom:
         cols = df.columns.values[1:]  # skip page_id
         updates = ",".join([col + "=%s" for col in cols])
 
@@ -77,17 +84,18 @@ def save_data(
         )
         with conn.cursor() as cur:
             for index, elem in df.iterrows():
-                if query:
+                if not custom:
+                    params = list(np.concatenate((elem.values[1:], elem.values[0:1])))
+                else:
                     params = []
                     for col in cols:
                         params.append(elem[col])
-                else:
-                    params = list(np.concatenate((elem.values[1:], elem.values[0:1])))
                 cur.execute(query, params)
         conn.commit()
-        conn.close()
     except Exception as err:
         print("Something went wrong. Error saving pages from %s \n" % dbname, err)
+    finally:
+        conn.close()
 
 
 ## Populate Interwiki
@@ -120,10 +128,10 @@ def get_interwiki(user_db_port=None, user=None, password=None):
             for mp in ret:
                 cur.execute(query, (mp["prefix"], mp["url"], mp["url"]))
         conn.commit()
-        conn.close()
     except Exception as err:
         print("Something went wrong. Could not get interwiki table\n", err)
-        exit(1)
+    finally:
+        conn.close()
 
 
 ## Get info from DB
@@ -216,7 +224,7 @@ def get_iwlinks_info(
             for df in query_data_generator(
                 query, DATABASE_NAME, replicas_port, user_db_port, user, password, False
             ):
-                save_data(df, db, user_db_port, user, password, save_query, cols)
+                save_data(df, db, user_db_port, user, password, save_query, cols, True)
 
             db_cur.execute(drop_query)
 
