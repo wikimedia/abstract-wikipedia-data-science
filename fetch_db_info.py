@@ -57,16 +57,19 @@ def query_data_generator(
         conn.close()
 
 
-def save_data(df, dbname, user_db_port=None, user=None, password=None):
+def save_data(
+    df, dbname, user_db_port=None, user=None, password=None, query=None, cols=None
+):
 
-    cols = df.columns.values[1:]  # skip page_id
-    updates = ",".join([col + "=%s" for col in cols])
+    if not query:
+        cols = df.columns.values[1:]  # skip page_id
+        updates = ",".join([col + "=%s" for col in cols])
 
-    query = "UPDATE Scripts SET %s WHERE dbname='%s' AND page_id=%s " % (
-        updates,
-        dbname,
-        "%s",
-    )
+        query = "UPDATE Scripts SET %s WHERE dbname='%s' AND page_id=%s " % (
+            updates,
+            dbname,
+            "%s",
+        )
 
     try:
         conn = db_acc.connect_to_user_database(
@@ -74,7 +77,12 @@ def save_data(df, dbname, user_db_port=None, user=None, password=None):
         )
         with conn.cursor() as cur:
             for index, elem in df.iterrows():
-                params = list(np.concatenate((elem.values[1:], elem.values[0:1])))
+                if query:
+                    params = []
+                    for col in cols:
+                        params.append(elem[col])
+                else:
+                    params = list(np.concatenate((elem.values[1:], elem.values[0:1])))
                 cur.execute(query, params)
         conn.commit()
         conn.close()
@@ -159,7 +167,7 @@ def get_iwlinks_info(
     So, url was matched with iwl_title
     """
 
-    init_query = "DROP TABLE IF EXISTS Iwlinks"
+    drop_query = "DROP TABLE IF EXISTS Iwlinks"
     create_query = (
         "CREATE TABLE Iwlinks ("
         "    iwl_from INT UNSIGNED, "
@@ -173,7 +181,6 @@ def get_iwlinks_info(
         "VALUES(%s, %s, %s) "
         "ON DUPLICATE KEY UPDATE iwl_title = %s"
     )
-    drop_query = "DROP TABLE Iwlinks"
     query = (
         "SELECT page_id, dbname, COUNT(DISTINCT iwl_from) AS iwls "
         "FROM Scripts "
@@ -187,6 +194,8 @@ def get_iwlinks_info(
         "ON url=iwl_url "
         "GROUP BY page_id, dbname"
     )
+    save_query = "UPDATE Scripts SET iwls = iwls + %s WHERE dbname=%s AND page_id=%s "
+    cols = ["iwls", "dbname", "page_id"]
 
     try:
         conn_db = db_acc.connect_to_user_database(
@@ -194,16 +203,11 @@ def get_iwlinks_info(
         )
         with conn_db.cursor() as db_cur:
 
-            db_cur.execute(init_query)
+            db_cur.execute(drop_query)
             db_cur.execute(create_query)
 
             for df in query_data_generator(
-                query="SELECT * FROM iwlinks",
-                db=db,
-                replicas_port=replicas_port,
-                user_db_port=user_db_port,
-                user=user,
-                password=password,
+                "SELECT * FROM iwlinks", db, replicas_port, user_db_port, user, password
             ):
                 for index, elem in df.iterrows():
                     params = list(np.concatenate((elem.values, elem.values[-1:])))
@@ -212,7 +216,7 @@ def get_iwlinks_info(
             for df in query_data_generator(
                 query, DATABASE_NAME, replicas_port, user_db_port, user, password, False
             ):
-                save_data(df, db, user_db_port, user, password)
+                save_data(df, db, user_db_port, user, password, save_query, cols)
 
             db_cur.execute(drop_query)
 
@@ -353,7 +357,8 @@ def get_edit_protection_info(
     ## Protection level for `edit` for the modules
 
     query = (
-        "SELECT page_id, pr_level AS pr_level_edit FROM page_restrictions "
+        "SELECT page_id, pr_level AS pr_level_edit "
+        "FROM page_restrictions "
         "INNER JOIN page "
         "    ON page_id=pr_page "
         "    AND page_namespace=828 "
@@ -373,7 +378,8 @@ def get_move_protection_info(
     ## Protection level for `move` for the modules
 
     query = (
-        "SELECT page_id, pr_level AS pr_level_move FROM page_restrictions "
+        "SELECT page_id, pr_level AS pr_level_move "
+        "FROM page_restrictions "
         "INNER JOIN page "
         "    ON page_id=pr_page "
         "    AND page_namespace=828 "
@@ -394,7 +400,7 @@ def get_most_common_tag_info(
     ## See the inline view (subquery) for details on each page
 
     query = (
-        "SELECT tagcount.page_id, GROUP_CONCAT(ctd_name) AS tags "
+        "SELECT tagcount.page_id AS page_id, GROUP_CONCAT(ctd_name) AS tags "
         "FROM "
         "("
         "    SELECT page_id, ctd_name, COUNT(*) AS tags "
@@ -440,14 +446,15 @@ def get_most_common_tag_info(
 
 
 def get_data(
-    function_name, replicas_port=None, user_db_port=None, user=None, password=None
+    function_names, replicas_port=None, user_db_port=None, user=None, password=None
 ):
 
     dbs = get_dbs(user_db_port, user, password)
 
     for db in dbs:
-        eval(function_name)(db, replicas_port, user_db_port, user, password)
-        print("     Loaded %s for %s" % (function_name, db))
+        for function_name in function_names:
+            eval(function_name)(db, replicas_port, user_db_port, user, password)
+            # print("     Loaded %s for %s" % (function_name, db))
 
     print("Done loading all data")
 
@@ -467,11 +474,12 @@ if __name__ == "__main__":
         help="Whether interwiki-table content should be re-fetched.",
     )
     parser.add_argument(
-        "--function-name",
+        "--function-names",
         "-fn",
         type=str,
+        nargs="+",
         help="Name of the function to run for all wikis. "
-        "One of get_revision_info, get_iwlinks_info, get_pagelinks_info, "
+        "One or more of: get_revision_info, get_iwlinks_info, get_pagelinks_info, "
         "get_langlinks_info, get_templatelinks_info, get_transclusions_info, "
         "get_categories_info, get_edit_protection_info, get_move_protection_info, "
         "get_most_common_tag_info",
@@ -509,12 +517,12 @@ if __name__ == "__main__":
     if not args.local:
         if args.interwiki:
             get_interwiki()
-        get_data(args.function_name)
+        get_data(args.function_names)
     else:
         if args.interwiki:
             get_interwiki(args.user_db_port, args.user, args.password)
         get_data(
-            args.function_name,
+            args.function_names,
             args.replicas_port,
             args.user_db_port,
             args.user,
