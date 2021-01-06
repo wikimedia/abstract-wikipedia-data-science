@@ -3,7 +3,14 @@ now=$(date +"%s")
 ## ---- code to run in cronjob ----
 cd abstract-wikipedia-data-science/
 source venv/bin/activate
-python3 fetch_db_info.py -fn $@
+
+if [ $1 = "gm" ] 
+then 
+    python3 fetch_db_info.py -gm
+else
+    python3 fetch_db_info.py -fn $@
+fi
+
 # arguments are the start and end indices of links to run
 ## --------------------------------
 
