@@ -518,7 +518,7 @@ def get_missed_data(replicas_port=None, user_db_port=None, user=None, password=N
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Gets information about Lua modules from multiple tables across the wiki."
-        "To use from local PC, use flag --local and all the additional flags needed for "
+        "To use from local PC, provide all the additional flags needed for "
         "establishing connection through ssh tunneling."
         "More help available at "
         "https://wikitech.wikimedia.org/wiki/Help:Toolforge/Database#SSH_tunneling_for_local_testing_which_makes_use_of_Wiki_Replica_databases"
