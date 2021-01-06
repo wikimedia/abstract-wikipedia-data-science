@@ -11,7 +11,7 @@ else
     python3 fetch_db_info.py -fn $@
 fi
 
-# arguments are the start and end indices of links to run
+# arguments are either `gm` to get missed content or a list of function names
 ## --------------------------------
 
 then=$(date +"%s")
