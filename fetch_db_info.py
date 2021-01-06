@@ -4,6 +4,7 @@ import numpy as np
 import pymysql
 import argparse
 import mwapi
+import os
 
 import utils.db_access as db_acc
 from db_script import encode_if_necessary, get_dbs
@@ -19,6 +20,7 @@ pymysql.converters.conversions.update(pymysql.converters.decoders)
 
 def query_data_generator(
     query,
+    function_name,
     db=None,
     replicas_port=None,
     user_db_port=None,
@@ -52,6 +54,8 @@ def query_data_generator(
 
     except Exception as err:
         print("Something went wrong. Could not query from %s \n" % db, err)
+        with open("missed_db_info.txt", "a") as file:
+            file.write(function_name + " " + db + "\n")
 
     finally:
         conn.close()
@@ -60,6 +64,7 @@ def query_data_generator(
 def save_data(
     df,
     dbname,
+    function_name,
     user_db_port=None,
     user=None,
     password=None,
@@ -92,8 +97,12 @@ def save_data(
                         params.append(elem[col])
                 cur.execute(query, params)
         conn.commit()
+
     except Exception as err:
         print("Something went wrong. Error saving pages from %s \n" % dbname, err)
+        with open("missed_db_info.txt", "a") as file:
+            file.write(function_name + " " + db + "\n")
+
     finally:
         conn.close()
 
@@ -138,7 +147,7 @@ def get_interwiki(user_db_port=None, user=None, password=None):
 
 
 def get_revision_info(
-    db, replicas_port=None, user_db_port=None, user=None, password=None
+    db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
     ## Number of revisions and information info about edits of the Scribunto modules
     query = (
@@ -158,13 +167,13 @@ def get_revision_info(
     )
 
     for df in query_data_generator(
-        query, db, replicas_port, user_db_port, user, password
+        query, function_name, db, replicas_port, user_db_port, user, password
     ):
-        save_data(df, db, user_db_port, user, password)
+        save_data(df, db, function_name, user_db_port, user, password)
 
 
 def get_iwlinks_info(
-    db, replicas_port=None, user_db_port=None, user=None, password=None
+    db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
     ## Number of inter wiki pages that referenced a module
     ## iwls from other dbs need to be added for each module
@@ -215,16 +224,39 @@ def get_iwlinks_info(
             db_cur.execute(create_query)
 
             for df in query_data_generator(
-                "SELECT * FROM iwlinks", db, replicas_port, user_db_port, user, password
+                "SELECT * FROM iwlinks",
+                function_name,
+                db,
+                replicas_port,
+                user_db_port,
+                user,
+                password,
             ):
                 for index, elem in df.iterrows():
                     params = list(np.concatenate((elem.values, elem.values[-1:])))
                     db_cur.execute(insert_query, params)
 
             for df in query_data_generator(
-                query, DATABASE_NAME, replicas_port, user_db_port, user, password, False
+                query,
+                function_name,
+                DATABASE_NAME,
+                replicas_port,
+                user_db_port,
+                user,
+                password,
+                False,
             ):
-                save_data(df, db, user_db_port, user, password, save_query, cols, True)
+                save_data(
+                    df,
+                    db,
+                    function_name,
+                    user_db_port,
+                    user,
+                    password,
+                    save_query,
+                    cols,
+                    True,
+                )
 
             db_cur.execute(drop_query)
 
@@ -235,7 +267,7 @@ def get_iwlinks_info(
 
 
 def get_pagelinks_info(
-    db, replicas_port=None, user_db_port=None, user=None, password=None
+    db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
     ## Number of (in-wiki) pages that referenced a module
 
@@ -252,13 +284,13 @@ def get_pagelinks_info(
     )
 
     for df in query_data_generator(
-        query, db, replicas_port, user_db_port, user, password
+        query, function_name, db, replicas_port, user_db_port, user, password
     ):
-        save_data(df, db, user_db_port, user, password)
+        save_data(df, db, function_name, user_db_port, user, password)
 
 
 def get_langlinks_info(
-    db, replicas_port=None, user_db_port=None, user=None, password=None
+    db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
     ## Number of languages links a module has (ll)
     ## Number of languages a module is available in (ll+1)
@@ -275,13 +307,13 @@ def get_langlinks_info(
     )
 
     for df in query_data_generator(
-        query, db, replicas_port, user_db_port, user, password
+        query, function_name, db, replicas_port, user_db_port, user, password
     ):
-        save_data(df, db, user_db_port, user, password)
+        save_data(df, db, function_name, user_db_port, user, password)
 
 
 def get_templatelinks_info(
-    db, replicas_port=None, user_db_port=None, user=None, password=None
+    db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
     ## Number of transclusions of a module
 
@@ -298,13 +330,13 @@ def get_templatelinks_info(
     )
 
     for df in query_data_generator(
-        query, db, replicas_port, user_db_port, user, password
+        query, function_name, db, replicas_port, user_db_port, user, password
     ):
-        save_data(df, db, user_db_port, user, password)
+        save_data(df, db, function_name, user_db_port, user, password)
 
 
 def get_transclusions_info(
-    db, replicas_port=None, user_db_port=None, user=None, password=None
+    db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
     ## Number of modules transcluded in a module
     ## this includes docs and other stuffs too
@@ -330,13 +362,13 @@ def get_transclusions_info(
     )
 
     for df in query_data_generator(
-        query, db, replicas_port, user_db_port, user, password
+        query, function_name, db, replicas_port, user_db_port, user, password
     ):
-        save_data(df, db, user_db_port, user, password)
+        save_data(df, db, function_name, user_db_port, user, password)
 
 
 def get_categories_info(
-    db, replicas_port=None, user_db_port=None, user=None, password=None
+    db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
     ## Number of categories a module is included in
     ## There is not concrete list of categores to look for.
@@ -354,13 +386,13 @@ def get_categories_info(
     )
 
     for df in query_data_generator(
-        query, db, replicas_port, user_db_port, user, password
+        query, function_name, db, replicas_port, user_db_port, user, password
     ):
-        save_data(df, db, user_db_port, user, password)
+        save_data(df, db, function_name, user_db_port, user, password)
 
 
 def get_edit_protection_info(
-    db, replicas_port=None, user_db_port=None, user=None, password=None
+    db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
     ## Protection level for `edit` for the modules
 
@@ -375,13 +407,13 @@ def get_edit_protection_info(
     )
 
     for df in query_data_generator(
-        query, db, replicas_port, user_db_port, user, password
+        query, function_name, db, replicas_port, user_db_port, user, password
     ):
-        save_data(df, db, user_db_port, user, password)
+        save_data(df, db, function_name, user_db_port, user, password)
 
 
 def get_move_protection_info(
-    db, replicas_port=None, user_db_port=None, user=None, password=None
+    db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
     ## Protection level for `move` for the modules
 
@@ -396,13 +428,13 @@ def get_move_protection_info(
     )
 
     for df in query_data_generator(
-        query, db, replicas_port, user_db_port, user, password
+        query, function_name, db, replicas_port, user_db_port, user, password
     ):
-        save_data(df, db, user_db_port, user, password)
+        save_data(df, db, function_name, user_db_port, user, password)
 
 
 def get_most_common_tag_info(
-    db, replicas_port=None, user_db_port=None, user=None, password=None
+    db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
     ## Comma separated most common tag names for each page
     ## See the inline view (subquery) for details on each page
@@ -448,9 +480,9 @@ def get_most_common_tag_info(
     )
 
     for df in query_data_generator(
-        query, db, replicas_port, user_db_port, user, password
+        query, function_name, db, replicas_port, user_db_port, user, password
     ):
-        save_data(df, db, user_db_port, user, password)
+        save_data(df, db, function_name, user_db_port, user, password)
 
 
 def get_data(
@@ -461,10 +493,26 @@ def get_data(
 
     for db in dbs:
         for function_name in function_names:
-            eval(function_name)(db, replicas_port, user_db_port, user, password)
+            eval(function_name)(
+                db, function_name, replicas_port, user_db_port, user, password
+            )
             # print("     Loaded %s for %s" % (function_name, db))
 
     print("Done loading all data")
+
+
+def get_missed_data(replicas_port=None, user_db_port=None, user=None, password=None):
+
+    with open("missed_db_info.txt") as file:
+        for line in file:
+
+            function_name, db = line.split()
+
+            eval(function_name)(
+                db, function_name, replicas_port, user_db_port, user, password
+            )
+
+    os.remove("missed_db_info.txt")
 
 
 if __name__ == "__main__":
@@ -493,10 +541,11 @@ if __name__ == "__main__":
         "get_most_common_tag_info",
     )
     parser.add_argument(
-        "--local",
-        "-l",
+        "--get-missed",
+        "-gm",
         action="store_true",
-        help="Connection is initiated from local pc.",
+        help="Whether to get the missed information only. Taken from missed_db_info.txt, "
+        "which lists function name and database name pairs.",
     )
     local_data = parser.add_argument_group(
         title="Info for connecting to Toolforge from local pc"
@@ -505,30 +554,35 @@ if __name__ == "__main__":
         "--replicas-port",
         "-r",
         type=int,
+        default=None,
         help="Port for connecting to meta table through ssh tunneling.",
     )
     local_data.add_argument(
         "--user-db-port",
         "-udb",
         type=int,
+        default=None,
         help="Port for connecting to tables, created by user in Toolforge, "
         "through ssh tunneling, if used.",
     )
     local_data.add_argument(
-        "--user", "-u", type=str, help="Toolforge username of the tool."
+        "--user", "-u", type=str, default=None, help="Toolforge username of the tool."
     )
     local_data.add_argument(
-        "--password", "-p", type=str, help="Toolforge password of the tool."
+        "--password",
+        "-p",
+        type=str,
+        default=None,
+        help="Toolforge password of the tool.",
     )
     args = parser.parse_args()
 
-    if not args.local:
-        if args.interwiki:
-            get_interwiki()
-        get_data(args.function_names)
+    if args.interwiki:
+        get_interwiki(args.user_db_port, args.user, args.password)
+
+    if args.get_missed:
+        get_missed_data(args.replicas_port, args.user_db_port, args.user, args.password)
     else:
-        if args.interwiki:
-            get_interwiki(args.user_db_port, args.user, args.password)
         get_data(
             args.function_names,
             args.replicas_port,
