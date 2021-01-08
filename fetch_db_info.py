@@ -503,16 +503,31 @@ def get_data(
 
 def get_missed_data(replicas_port=None, user_db_port=None, user=None, password=None):
 
-    with open("missed_db_info.txt") as file:
-        for line in file:
+    try:
+        missed = []
 
-            function_name, db = line.split()
+        ## Read file
+        with open("missed_db_info.txt", "r") as file:
+            for line in file:
+                if line:
+                    missed.append(line.split())
 
+        ## Empty file
+        with open("missed_db_info.txt", "w") as file:
+            file.write("")
+        lol
+        for function_name, db in missed:
             eval(function_name)(
                 db, function_name, replicas_port, user_db_port, user, password
             )
 
-    os.remove("missed_db_info.txt")
+    except Exception as err:
+        print("Something went wrong.\n", err)
+
+    finally:
+        with open("missed_db_info.txt", "w") as file:
+            for miss in missed:
+                file.write(miss[0] + " " + miss[1] + "\n")
 
 
 if __name__ == "__main__":
