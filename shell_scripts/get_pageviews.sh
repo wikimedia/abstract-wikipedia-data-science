@@ -6,9 +6,9 @@ source venv/bin/activate
 
 if [[ $# -eq 0 ]]
 then
-    python3 get_pageviews.py
+    python3 get_pageviews.py -rest
 else
-    python3 get_pageviews.py -d $1
+    python3 get_pageviews.py -d -rest
 fi
 ## --------------------------------
 

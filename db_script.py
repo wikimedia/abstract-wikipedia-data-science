@@ -7,6 +7,11 @@ import constants
 
 
 def save_to_db(entries, db, user_db_port=None, user=None, password=None):
+
+    ## Note that title from page-table does not have namespace prefix
+    ## Title from API does
+    ## We retain the value from API
+
     query = (
         "insert into Scripts(dbname, page_id, title, in_database) "
         "             values(%s, %s, %s, %s)\n"

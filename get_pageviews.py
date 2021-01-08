@@ -2,12 +2,54 @@ import pandas as pd
 import argparse
 import toolforge
 import mwapi
+import requests
+from urllib.parse import quote_plus
+from datetime import datetime, timedelta
 
 import utils.db_access as db_acc
 from constants import DATABASE_NAME
 
 
-def get_mapping(user_db_port=None, user=None, password=None):
+def get_pageviews_rest_api(title, wiki, date, all):
+
+    title = quote_plus(title)
+    date_from = "20000101"
+    granularity = "monthly"
+    if not all:
+        date_from = date
+        granularity = "daily"
+
+    url = (
+        "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/"
+        + wiki
+        + "/all-access/all-agents/"
+        + title
+        + "/"
+        + granularity
+        + "/"
+        + date_from
+        + "/"
+        + date
+    )
+
+    USER_AGENT = {"User-Agent": "abstract-wiki-ds"}
+    response = requests.get(url, headers=USER_AGENT)
+
+    if response.status_code == 200:
+        res = response.json()
+        cnt = 0
+        for item in res["items"]:
+            cnt += item["views"]
+        return cnt
+
+    elif response.status_code == 404:
+        return 0
+
+    else:
+        print(response.status_code, response.reason)
+
+
+def get_mapping(user_db_port, user, password):
     try:
         conn = db_acc.connect_to_user_database(
             DATABASE_NAME, user_db_port, user, password
@@ -41,7 +83,7 @@ def get_pageviews(pageid, wiki, days):
     return cnt
 
 
-def get_modules(user_db_port=None, user=None, password=None):
+def get_modules(user_db_port, user, password):
     try:
         conn = db_acc.connect_to_user_database(
             DATABASE_NAME, user_db_port, user, password
@@ -58,7 +100,7 @@ def get_modules(user_db_port=None, user=None, password=None):
         exit(1)
 
 
-def get_transclusions(dbname, title, replicas_port=None, user=None, password=None):
+def get_transclusions(dbname, title, replicas_port, user, password):
     try:
         conn = db_acc.connect_to_replicas_database(
             dbname, replicas_port, user, password
@@ -80,9 +122,7 @@ def get_transclusions(dbname, title, replicas_port=None, user=None, password=Non
         exit(1)
 
 
-def save_pageview(
-    page_id, dbname, pageviews, add=False, user_db_port=None, user=None, password=None
-):
+def save_pageview(page_id, dbname, pageviews, add, user_db_port, user, password):
 
     if add:
         query = (
@@ -105,28 +145,57 @@ def save_pageview(
         print("Something went wrong.\n", err)
 
 
-def get_all_pageviews(
-    replicas_port=None, user_db_port=None, user=None, password=None, days=1
-):
+def api2db_title(title):
+    ix = title.find(":")
+    return title if ix == -1 else title[ix + 1 :]
+
+
+def get_title(dbname, page_id, replicas_port, user, password):
+
+    try:
+        conn = db_acc.connect_to_replicas_database(
+            dbname, replicas_port, user, password
+        )
+
+        with conn.cursor() as cur:
+            cur.execute("SELECT page_title FROM page WHERE page_id=%s", page_id)
+            title = cur.fetchone()[0]
+        conn.close()
+        return title
+    except Exception as err:
+        print("Something went wrong.\n", err)
+        exit(1)
+
+
+def get_date():
+    ## Gets yesterdays date in YYYYMMDD format
+    return datetime.date(datetime.now() - timedelta(1)).strftime("%Y%m%d")
+
+
+def get_all_pageviews(replicas_port, user_db_port, user, password, all, rest_api):
     db_map = get_mapping(user_db_port, user, password)
+    days = 60 if all else 1
 
     for (dbname, module_page_id, title) in get_modules(user_db_port, user, password):
+
+        title = api2db_title(title)
         pageviews = 0
         wiki = db_map[dbname]
 
         for page_id in get_transclusions(dbname, title, replicas_port, user, password):
-            pageviews += get_pageviews(page_id, wiki, days)
+            if rest_api:
+                pageviews += get_pageviews_rest_api(
+                    get_title(dbname, page_id, replicas_port, user, password),
+                    wiki,
+                    get_date(),
+                    all,
+                )
+            else:
+                pageviews += get_pageviews(page_id, wiki, days)
 
         save_pageview(
-            module_page_id, dbname, pageviews, days == 1, user_db_port, user, password
+            module_page_id, dbname, pageviews, not all, user_db_port, user, password
         )
-
-
-def pageviews_type(x):
-    x = int(x)
-    if x < 1 or x > 60:
-        raise argparse.ArgumentError("Should be a value from 1 to 60.")
-    return x
 
 
 if __name__ == "__main__":
@@ -138,12 +207,19 @@ if __name__ == "__main__":
         "https://wikitech.wikimedia.org/wiki/Help:Toolforge/Database#SSH_tunneling_for_local_testing_which_makes_use_of_Wiki_Replica_databases"
     )
     parser.add_argument(
-        "--days",
+        "--use-rest",
+        "-rest",
+        action="store_true",
+        help="Whether to use REST API. Uses PHP API if not set. "
+        "REST API collects pageviews since July, 2015 whereas PHP API gets data for the last 60 days only. "
+        "To collect daily data, both work the same (although values differ due to internal API caching)",
+    )
+    parser.add_argument(
+        "--all-days",
         "-d",
-        type=pageviews_type,
-        default=1,
-        help="Number of days of pageviews to get. A number from 1 to 60. "
-        "Intended usage: Set 60 on initial run and 1 on subsequent daily runs.",
+        action="store_true",
+        help="Whether to get pageviews `till today` or `only today`. "
+        "Intended usage: Use it on initial run and on subsequent daily runs avoid it to get daily data only.",
     )
     local_data = parser.add_argument_group(
         title="Info for connecting to Toolforge from local pc"
@@ -175,5 +251,10 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     get_all_pageviews(
-        args.replicas_port, args.user_db_port, args.user, args.password, args.days
+        args.replicas_port,
+        args.user_db_port,
+        args.user,
+        args.password,
+        args.all_days,
+        args.use_rest,
     )
