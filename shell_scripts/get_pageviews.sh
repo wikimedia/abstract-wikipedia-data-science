@@ -6,9 +6,17 @@ source venv/bin/activate
 
 if [[ $# -eq 0 ]]
 then
-    python3 get_pageviews.py -rest
-else
+    python3 get_pageviews.py
+elif [[ $# -eq 2 ]]
+then
+    echo $1 $2
     python3 get_pageviews.py -d -rest
+elif [[ $1 = "d" ]]
+then
+    python3 get_pageviews.py -d
+elif [[ $1 = "rest" ]]
+then
+    python3 get_pageviews.py -rest
 fi
 ## --------------------------------
 
