@@ -12,41 +12,45 @@ from constants import DATABASE_NAME
 
 def get_pageviews_rest_api(title, wiki, date, all):
 
-    title = quote_plus(title)
-    date_from = "20000101"
-    granularity = "monthly"
-    if not all:
-        date_from = date
-        granularity = "daily"
+    try:
+        title = quote_plus(title)
+        date_from = "20000101"
+        granularity = "monthly"
+        if not all:
+            date_from = date
+            granularity = "daily"
 
-    url = (
-        "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/"
-        + wiki
-        + "/all-access/all-agents/"
-        + title
-        + "/"
-        + granularity
-        + "/"
-        + date_from
-        + "/"
-        + date
-    )
+        url = (
+            "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/"
+            + wiki
+            + "/all-access/all-agents/"
+            + title
+            + "/"
+            + granularity
+            + "/"
+            + date_from
+            + "/"
+            + date
+        )
 
-    USER_AGENT = {"User-Agent": "abstract-wiki-ds"}
-    response = requests.get(url, headers=USER_AGENT)
+        USER_AGENT = {"User-Agent": "abstract-wiki-ds"}
+        response = requests.get(url, headers=USER_AGENT)
 
-    if response.status_code == 200:
-        res = response.json()
-        cnt = 0
-        for item in res["items"]:
-            cnt += item["views"]
-        return cnt
+        if response.status_code == 200:
+            res = response.json()
+            cnt = 0
+            for item in res["items"]:
+                cnt += item["views"]
+            return cnt
 
-    elif response.status_code == 404:
-        return 0
+        elif response.status_code == 404:
+            return 0
 
-    else:
-        print(response.status_code, response.reason)
+        else:
+            print(response.status_code, response.reason)
+
+    except Exception as err:
+        print("Something went wrong.\n", err)
 
 
 def get_mapping(user_db_port, user, password):

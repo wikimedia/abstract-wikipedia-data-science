@@ -84,7 +84,7 @@ def get_data(dbs, replicas_port=None, user_db_port=None, user=None, password=Non
 
                 # Saving to db
                 save_to_db(df_page, db, user_db_port, user, password)
-                print("Finished loading scripts from ", db)
+                # print("Finished loading scripts from ", db)
             conn.close()
         except Exception as err:
             print("Error loading pages from db:", db, "\nError:", err)

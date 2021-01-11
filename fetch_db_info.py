@@ -515,7 +515,7 @@ def get_missed_data(replicas_port=None, user_db_port=None, user=None, password=N
         ## Empty file
         with open("missed_db_info.txt", "w") as file:
             file.write("")
-        lol
+
         for function_name, db in missed:
             eval(function_name)(
                 db, function_name, replicas_port, user_db_port, user, password
