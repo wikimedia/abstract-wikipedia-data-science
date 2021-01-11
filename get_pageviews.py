@@ -1,6 +1,5 @@
 import pandas as pd
 import argparse
-import toolforge
 import mwapi
 import requests
 from urllib.parse import quote_plus
@@ -47,7 +46,7 @@ def get_pageviews_rest_api(title, wiki, date, all):
             print(response.status_code, response.reason)
 
     except Exception as err:
-        print("Something went wrong.\n", err)
+        print("Something went wrong fetching from REST API.\n", err)
 
     return 0
 
@@ -63,7 +62,7 @@ def get_mapping(user_db_port, user, password):
         conn.close()
         return db_map
     except Exception as err:
-        print("Something went wrong.\n", err)
+        print("Something went wrong getting dbname-url mapping.\n", err)
         exit(1)
 
 
@@ -71,8 +70,7 @@ def get_pageviews(pageid, wiki, days):
 
     cnt = 0
     try:
-        user_agent = toolforge.set_user_agent("abstract-wiki-ds")
-        session = mwapi.Session(wiki, user_agent=user_agent)
+        session = mwapi.Session(wiki, user_agent="abstract-wiki-ds")
         params = {
             "action": "query",
             "format": "json",
@@ -87,7 +85,7 @@ def get_pageviews(pageid, wiki, days):
                 cnt += v
 
     except Exception as err:
-        print("Something went wrong. \n", err)
+        print("Something went wrong fetching from API. \n", err)
 
     return cnt
 
@@ -105,7 +103,7 @@ def get_modules(user_db_port, user, password):
 
         conn.close()
     except Exception as err:
-        print("Something went wrong.\n", err)
+        print("Something went wrong fetching module list.\n", err)
         exit(1)
 
 
@@ -127,8 +125,11 @@ def get_transclusions(dbname, title, replicas_port, user, password):
 
         conn.close()
     except Exception as err:
-        print("Something went wrong.\n", err)
-        exit(1)
+        print(
+            "Something went wrong getting transclusions for %s -- %s.\n"
+            % (dbname, title),
+            err,
+        )
 
 
 def save_pageview(page_id, dbname, pageviews, add, user_db_port, user, password):
@@ -151,7 +152,7 @@ def save_pageview(page_id, dbname, pageviews, add, user_db_port, user, password)
         conn.commit()
         conn.close()
     except Exception as err:
-        print("Something went wrong.\n", err)
+        print("Something went wrong saving to db.\n", err)
 
 
 def api2db_title(title):
@@ -172,7 +173,7 @@ def get_title(dbname, page_id, replicas_port, user, password):
         conn.close()
         return title
     except Exception as err:
-        print("Something went wrong.\n", err)
+        print("Something went wrong getting page title.\n", err)
         exit(1)
 
 
@@ -191,20 +192,26 @@ def get_all_pageviews(replicas_port, user_db_port, user, password, all, rest_api
         pageviews = 0
         wiki = db_map[dbname]
 
-        for page_id in get_transclusions(dbname, title, replicas_port, user, password):
-            if rest_api:
-                pageviews += get_pageviews_rest_api(
-                    get_title(dbname, page_id, replicas_port, user, password),
-                    wiki,
-                    get_date(),
-                    all,
-                )
-            else:
-                pageviews += get_pageviews(page_id, wiki, days)
+        try:
+            for page_id in get_transclusions(
+                dbname, title, replicas_port, user, password
+            ):
+                if rest_api:
+                    pageviews += get_pageviews_rest_api(
+                        get_title(dbname, page_id, replicas_port, user, password),
+                        wiki,
+                        get_date(),
+                        all,
+                    )
+                else:
+                    pageviews += get_pageviews(page_id, wiki, days)
 
-        save_pageview(
-            module_page_id, dbname, pageviews, not all, user_db_port, user, password
-        )
+            save_pageview(
+                module_page_id, dbname, pageviews, not all, user_db_port, user, password
+            )
+
+        except Exception as err:
+            print("Something went wrong for page %s.\n" % title, err)
 
 
 if __name__ == "__main__":
