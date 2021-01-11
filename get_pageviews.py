@@ -43,14 +43,13 @@ def get_pageviews_rest_api(title, wiki, date, all):
                 cnt += item["views"]
             return cnt
 
-        elif response.status_code == 404:
-            return 0
-
         else:
             print(response.status_code, response.reason)
 
     except Exception as err:
         print("Something went wrong.\n", err)
+
+    return 0
 
 
 def get_mapping(user_db_port, user, password):
@@ -69,21 +68,27 @@ def get_mapping(user_db_port, user, password):
 
 
 def get_pageviews(pageid, wiki, days):
-    user_agent = toolforge.set_user_agent("abstract-wiki-ds")
-    session = mwapi.Session(wiki, user_agent=user_agent)
-    params = {
-        "action": "query",
-        "format": "json",
-        "prop": "pageviews",
-        "pageids": pageid,
-        "pvipdays": days,
-        "formatversion": 2,
-    }
-    result = session.get(params)
+
     cnt = 0
-    for k, v in result["query"]["pages"][0]["pageviews"].items():
-        if v:
-            cnt += v
+    try:
+        user_agent = toolforge.set_user_agent("abstract-wiki-ds")
+        session = mwapi.Session(wiki, user_agent=user_agent)
+        params = {
+            "action": "query",
+            "format": "json",
+            "prop": "pageviews",
+            "pageids": pageid,
+            "pvipdays": days,
+            "formatversion": 2,
+        }
+        result = session.get(params)
+        for k, v in result["query"]["pages"][0]["pageviews"].items():
+            if v:
+                cnt += v
+
+    except Exception as err:
+        print("Something went wrong. \n", err)
+
     return cnt
 
 
