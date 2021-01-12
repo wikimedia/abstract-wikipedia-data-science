@@ -42,7 +42,7 @@ def query_data_generator(
         cur = conn.cursor()
 
         offset = 0
-        row_count = 500
+        row_count = 300
         while True:
             df = pd.read_sql(
                 query + " LIMIT %d OFFSET %d" % (row_count, offset), conn
