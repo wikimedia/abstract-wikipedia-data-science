@@ -7,15 +7,22 @@ import constants
 
 
 def save_to_db(entries, db, user_db_port=None, user=None, password=None):
+    """
+    Saves datframe into Scripts table.
+    Note that title from page-table does not have namespace prefix, title from API does.
+    We retain the value from API.
 
-    ## Note that title from page-table does not have namespace prefix
-    ## Title from API does
-    ## We retain the value from API
+    :param entries: A dataframe with columns: dbname, page_id, in_database, page_is_redirect, page_is_new
+    :param user_db_port: Port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
 
     query = (
-        "insert into Scripts(dbname, page_id, title, in_database) "
-        "             values(%s, %s, %s, %s)\n"
-        "on duplicate key update in_database = %s"
+        "insert into Scripts(dbname, page_id, in_database, page_is_redirect, page_is_new) "
+        "             values(%s, %s, %s, %s, %s)\n"
+        "on duplicate key update in_database = %s, page_is_redirect = %s, page_is_new = %s"
     )
     try:
         conn = db_acc.connect_to_user_database(
@@ -23,7 +30,19 @@ def save_to_db(entries, db, user_db_port=None, user=None, password=None):
         )
         with conn.cursor() as cur:
             for index, elem in entries.iterrows():
-                cur.execute(query, [db, elem["page_id"], elem["page_title"], 1, 1])
+                cur.execute(
+                    query,
+                    [
+                        db,
+                        elem["page_id"],
+                        1,
+                        elem["page_is_redirect"],
+                        elem["page_is_new"],
+                        1,
+                        elem["page_is_redirect"],
+                        elem["page_is_new"],
+                    ],
+                )
         conn.commit()
         conn.close()
     except Exception as err:
@@ -38,6 +57,14 @@ def encode_if_necessary(b):
 
 
 def get_dbs(user_db_port=None, user=None, password=None):
+    """
+    Returns a list of all the dbnames from Sources table.
+
+    :param user_db_port: Port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: list
+    """
     try:
         conn = db_acc.connect_to_user_database(
             constants.DATABASE_NAME, user_db_port, user, password
@@ -76,7 +103,7 @@ def get_data(dbs, replicas_port=None, user_db_port=None, user=None, password=Non
                 ## Query
                 cur.execute("USE " + db + "_p")
                 SQL_Query = pd.read_sql_query(
-                    "SELECT page_id, page_title, page_is_redirect, page_is_new FROM page \
+                    "SELECT page_id, page_is_redirect, page_is_new FROM page \
                     WHERE page_content_model='Scribunto' AND page_namespace=828",
                     conn,
                 )

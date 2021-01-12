@@ -4,7 +4,16 @@ from constants import DATABASE_NAME
 import utils.db_access as db_acc
 
 
-def remove_missed_contents(user_db_port=None, user=None, password=None):
+def remove_missed_contents(user_db_port, user, password):
+    """
+    Removes pages with missing content or data.
+
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
+
     try:
         conn = db_acc.connect_to_user_database(
             DATABASE_NAME, user_db_port, user, password

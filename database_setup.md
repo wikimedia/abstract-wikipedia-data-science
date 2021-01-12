@@ -43,6 +43,8 @@ create table Scripts(
     pr_level_move varchar(32),
     tags text,
     pageviews int default 0,
+    page_is_redirect bool default 0,
+    page_is_new bool default 0,
     primary key (page_id, dbname),
     foreign key (dbname) references Sources(dbname)
 );

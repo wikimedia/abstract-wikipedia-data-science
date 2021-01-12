@@ -28,6 +28,20 @@ def query_data_generator(
     password=None,
     replicas=True,
 ):
+    """
+    Query database (db) and return outputs in chunks.
+
+    :param query: The SQL query to run.
+    :param function_name: The function that was used to collect this data, useful for saving when data is missed due to errors.
+    :param db: The database from which the data was collected.
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :param replicas: False if collecting data from toolsdb user database, True is collecting from other wikimedia databases.
+    :return: dataframe
+    """
+
     try:
 
         if replicas:
@@ -72,6 +86,20 @@ def save_data(
     cols=None,
     custom=False,
 ):
+    """
+    Save data from df into Scripts table.
+
+    :param df: The data to save into Scripts table.
+    :param dbname: The database from which the data was collected.
+    :param function_name: The function that was used to collect this data, useful for saving when data is missed due to errors.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :param query: Only used when custom=True. The query to use to save into table.
+    :param cols: Only used when custom=True. The column list in order of params in the query.
+    :param custom: True id providing custom query and column list to use to save into table.
+    :return: None
+    """
 
     if not custom:
         cols = df.columns.values[1:]  # skip page_id
@@ -107,14 +135,18 @@ def save_data(
         conn.close()
 
 
-## Populate Interwiki
-
-
 def get_interwiki(user_db_port=None, user=None, password=None):
 
-    ## Get interwiki mapping from API
-    user_agent = toolforge.set_user_agent("abstract-wiki-ds")
-    session = mwapi.Session("https://en.wikipedia.org", user_agent=user_agent)
+    """
+    Get interwiki mapping from API and save in user database.
+
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
+
+    session = mwapi.Session("https://en.wikipedia.org", user_agent="abstract-wiki-ds")
     params = {
         "action": "query",
         "format": "json",
@@ -143,13 +175,21 @@ def get_interwiki(user_db_port=None, user=None, password=None):
         conn.close()
 
 
-## Get info from DB
-
-
 def get_revision_info(
     db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
-    ## Number of revisions and information info about edits of the Scribunto modules
+    """
+    Get the number of revisions and information info about edits of the Scribunto modules and save in user database.
+
+    :param db: The database to connect to and get data from.
+    :param function_names: The name of this function, useful to save function name when data is missed.
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
+
     query = (
         "SELECT page_id, "
         "COUNT(rev_page) AS edits, SUM(rev_minor_edit) AS minor_edits, "
@@ -175,13 +215,19 @@ def get_revision_info(
 def get_iwlinks_info(
     db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
-    ## Number of inter wiki pages that referenced a module
-    ## iwls from other dbs need to be added for each module
-
     """
-    `Module:` is not the only prefix for Scribunto modules.
-    It is different for languages e.g `মডিউল:`, ماجول ,ماڈیول
-    So, url was matched with iwl_title
+    Get the number of inter wiki pages that referenced a module and save in user database.
+    iwls from other dbs need to be added for each module.
+    `Module:` is not the only prefix for Scribunto modules. It is different for languages e.g `মডিউল:`, ماجول ,ماڈیول.
+    So, url was matched with iwl_title.
+
+    :param db: The database to connect to and get data from.
+    :param function_names: The name of this function, useful to save function name when data is missed.
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
     """
 
     drop_query = "DROP TABLE IF EXISTS Iwlinks"
@@ -269,7 +315,17 @@ def get_iwlinks_info(
 def get_pagelinks_info(
     db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
-    ## Number of (in-wiki) pages that referenced a module
+    """
+    Get the number of (in-wiki) pages that referenced a module and save in user database.
+
+    :param db: The database to connect to and get data from.
+    :param function_names: The name of this function, useful to save function name when data is missed.
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
 
     query = (
         "SELECT page_id, "
@@ -292,9 +348,19 @@ def get_pagelinks_info(
 def get_langlinks_info(
     db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
-    ## Number of languages links a module has (ll)
-    ## Number of languages a module is available in (ll+1)
-    ## Use the langlink table more to find out language independent subset of modules
+    """
+    Get the number of languages links a module has (ll) and save in user database.
+    Number of languages a module is available in (ll+1).Use the langlink table more to
+    find out language independent subset of modules.
+
+    :param db: The database to connect to and get data from.
+    :param function_names: The name of this function, useful to save function name when data is missed.
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
 
     query = (
         "SELECT page_id, COUNT(DISTINCT ll_lang) AS langs "
@@ -315,7 +381,17 @@ def get_langlinks_info(
 def get_templatelinks_info(
     db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
-    ## Number of transclusions of a module
+    """
+    Get the number of transclusions of a module and save in user database.
+
+    :param db: The database to connect to and get data from.
+    :param function_names: The name of this function, useful to save function name when data is missed.
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
 
     query = (
         "SELECT page_id, "
@@ -338,10 +414,18 @@ def get_templatelinks_info(
 def get_transclusions_info(
     db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
-    ## Number of modules transcluded in a module
-    ## this includes docs and other stuffs too
-    ## so we need to filter by namespace and content_model
-    ## The query makes sure both from and to pages are Scribunto modules
+    """
+    Get the number of modules transcluded in a module and save in user database.
+    The query makes sure both from and to pages are Scribunto modules
+
+    :param db: The database to connect to and get data from.
+    :param function_names: The name of this function, useful to save function name when data is missed.
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
 
     query = (
         "SELECT tl_from, COUNT(DISTINCT tl_title) AS transclusions "
@@ -370,10 +454,20 @@ def get_transclusions_info(
 def get_categories_info(
     db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
-    ## Number of categories a module is included in
-    ## There is not concrete list of categores to look for.
-    ## We can list it ourselves, but then again it varies according to language.
-    ## If required, use the category table to identify important categories
+    """
+    Get the number of categories a module is included in and save in user database.
+    There is not concrete list of categores to look for. We can list it ourselves,
+    but then again it varies according to language. If required, use the category
+    table to identify important categories
+
+    :param db: The database to connect to and get data from.
+    :param function_names: The name of this function, useful to save function name when data is missed.
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
 
     query = (
         "SELECT page_id, COUNT(DISTINCT cl_to) AS categories "
@@ -394,7 +488,17 @@ def get_categories_info(
 def get_edit_protection_info(
     db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
-    ## Protection level for `edit` for the modules
+    """
+    Get protection level for `edit` for the modules and save in user database.
+
+    :param db: The database to connect to and get data from.
+    :param function_names: The name of this function, useful to save function name when data is missed.
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
 
     query = (
         "SELECT page_id, pr_level AS pr_level_edit "
@@ -415,7 +519,17 @@ def get_edit_protection_info(
 def get_move_protection_info(
     db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
-    ## Protection level for `move` for the modules
+    """
+    Get protection level for `move` for the modules and save in user database.
+
+    :param db: The database to connect to and get data from.
+    :param function_names: The name of this function, useful to save function name when data is missed.
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
 
     query = (
         "SELECT page_id, pr_level AS pr_level_move "
@@ -436,8 +550,19 @@ def get_move_protection_info(
 def get_most_common_tag_info(
     db, function_name, replicas_port=None, user_db_port=None, user=None, password=None
 ):
-    ## Comma separated most common tag names for each page
-    ## See the inline view (subquery) for details on each page
+    """
+    Loading comma separated most common tag names for each page from all
+    databases and save in user database. See the inline view (subquery)
+    for details on each page.
+
+    :param db: The database to connect to and get data from.
+    :param function_names: The name of this function, useful to save function name when data is missed.
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
 
     query = (
         "SELECT tagcount.page_id AS page_id, GROUP_CONCAT(ctd_name) AS tags "
@@ -488,6 +613,16 @@ def get_most_common_tag_info(
 def get_data(
     function_names, replicas_port=None, user_db_port=None, user=None, password=None
 ):
+    """
+    Loading data from all databases using a specific function -- therefore collecting a specific set of data.
+
+    :param function_names: A list of function names to call for all the databases.
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
 
     dbs = get_dbs(user_db_port, user, password)
 
@@ -502,7 +637,17 @@ def get_data(
 
 
 def get_missed_data(replicas_port=None, user_db_port=None, user=None, password=None):
+    """
+    Retry loading missed data from databases.
 
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
+
+    success = False
     try:
         missed = []
 
@@ -521,13 +666,16 @@ def get_missed_data(replicas_port=None, user_db_port=None, user=None, password=N
                 db, function_name, replicas_port, user_db_port, user, password
             )
 
+        success = True
+
     except Exception as err:
         print("Something went wrong.\n", err)
 
     finally:
-        with open("missed_db_info.txt", "w") as file:
-            for miss in missed:
-                file.write(miss[0] + " " + miss[1] + "\n")
+        if not success:
+            with open("missed_db_info.txt", "w") as file:
+                for miss in missed:
+                    file.write(miss[0] + " " + miss[1] + "\n")
 
 
 if __name__ == "__main__":

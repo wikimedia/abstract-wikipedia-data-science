@@ -10,6 +10,15 @@ from constants import DATABASE_NAME
 
 
 def get_pageviews_rest_api(title, wiki, date, all):
+    """
+    Get pageviews for a specific page using the WikiMedia REST API.
+
+    :param title: Title of the page whose pageviews to fetch.
+    :param wiki: URL of the wiki. Like en.wikipedia.org.
+    :param date: The date till when the pageviews should be fetched.
+    :param all: Set True to fetch all page views till `date`. Else fetches pageviews only for `date` day.
+    :return: int
+    """
 
     try:
         title = quote_plus(title)
@@ -52,6 +61,14 @@ def get_pageviews_rest_api(title, wiki, date, all):
 
 
 def get_mapping(user_db_port, user, password):
+    """
+    Fetch and return database name to URL mapping.
+
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: dictionary of fetched info in form {dbname1: url1, dbname2:url2,...}
+    """
     try:
         conn = db_acc.connect_to_user_database(
             DATABASE_NAME, user_db_port, user, password
@@ -67,6 +84,14 @@ def get_mapping(user_db_port, user, password):
 
 
 def get_pageviews(pageid, wiki, days):
+   """
+    Get pageviews for a specific page using the WikiMedia PHP API.
+
+    :param pageid: Id of the page whose pageviews to fetch.
+    :param wiki: URL of the wiki. Like en.wikipedia.org.
+    :param days: The number of last days data to fetch.
+    :return: int
+    """
 
     cnt = 0
     try:
@@ -91,6 +116,15 @@ def get_pageviews(pageid, wiki, days):
 
 
 def get_modules(user_db_port, user, password):
+    """
+    A generator to fetch and return all pages in the Scripts table.
+
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: Tuples with dbname, page_id, and title
+    """
+
     try:
         conn = db_acc.connect_to_user_database(
             DATABASE_NAME, user_db_port, user, password
@@ -108,6 +142,17 @@ def get_modules(user_db_port, user, password):
 
 
 def get_transclusions(dbname, title, replicas_port, user, password):
+    """
+    A generator to fetch and return all pageid of pages that transclude the `title` module.
+
+    :param dbname: Which database the module corresponds to.
+    :param title: Title of the module.
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: int
+    """
+
     try:
         conn = db_acc.connect_to_replicas_database(
             dbname, replicas_port, user, password
@@ -133,6 +178,17 @@ def get_transclusions(dbname, title, replicas_port, user, password):
 
 
 def save_pageview(page_id, dbname, pageviews, add, user_db_port, user, password):
+    """
+    Save pageviews data into Scripts table.
+
+    :param page_id: The Id of the page whose pageviews is to be stored.
+    :param dbname: Which database the module corresponds to.
+    :param pageviews: The value to be stored in table.
+    :param add: Whether to add to the existing pageviews(when collecting daily data) or not.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
 
     if add:
         query = (
@@ -156,11 +212,29 @@ def save_pageview(page_id, dbname, pageviews, add, user_db_port, user, password)
 
 
 def api2db_title(title):
+    """
+    Turns namespace included page title into only page title.
+    Like 'Module:Yesno' to 'Yesno'
+
+    :param title: The string to format.
+    :return: Formatted page title.
+    """
+
     ix = title.find(":")
     return title if ix == -1 else title[ix + 1 :]
 
 
 def get_title(dbname, page_id, replicas_port, user, password):
+    """
+    Get title of the page with id as `page_id`.
+
+    :param dbname: Which database the module corresponds to.
+    :param page_id: The Id of the page whose page title is to be fetched.
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: Page title as string.
+    """
 
     try:
         conn = db_acc.connect_to_replicas_database(
@@ -178,11 +252,28 @@ def get_title(dbname, page_id, replicas_port, user, password):
 
 
 def get_date():
-    ## Gets yesterdays date in YYYYMMDD format
+    """
+    Gets yesterdays date in YYYYMMDD format.
+
+    :return: Date as string.
+    """
+
     return datetime.date(datetime.now() - timedelta(1)).strftime("%Y%m%d")
 
 
 def get_all_pageviews(replicas_port, user_db_port, user, password, all, rest_api):
+    """
+    Get pageviews for all pages which transclude modules and save them.
+
+    :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :param all: Set True to fetch all page views till yesterday. Else fetches pageviews only for yesterday.
+    :param rest_api: If True, uses the REST API, else uses the PHP API.
+    :return: None
+    """
+
     db_map = get_mapping(user_db_port, user, password)
     days = 60 if all else 1
 
