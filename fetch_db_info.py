@@ -329,7 +329,7 @@ def get_pagelinks_info(
 
     query = (
         "SELECT page_id, "
-        "COUNT(DISTINCT pl_from) AS pls "
+        "COUNT(pl_from) AS pls "
         "FROM page "
         "INNER JOIN pagelinks "
         "    ON page_title=pl_title "
@@ -363,7 +363,7 @@ def get_langlinks_info(
     """
 
     query = (
-        "SELECT page_id, COUNT(DISTINCT ll_lang) AS langs "
+        "SELECT page_id, COUNT(ll_lang) AS langs "
         "FROM page "
         "INNER JOIN langlinks "
         "    ON ll_from=page_id "
@@ -395,7 +395,7 @@ def get_templatelinks_info(
 
     query = (
         "SELECT page_id, "
-        "COUNT(DISTINCT tl_from) AS transcluded_in "
+        "COUNT(tl_from) AS transcluded_in "
         "FROM page "
         "INNER JOIN templatelinks "
         "    ON page_title=tl_title "
@@ -428,7 +428,7 @@ def get_transclusions_info(
     """
 
     query = (
-        "SELECT tl_from, COUNT(DISTINCT tl_title) AS transclusions "
+        "SELECT tl_from, COUNT(tl_title) AS transclusions "
         "FROM page "
         "INNER JOIN templatelinks "
         "    ON page_id=tl_from "
@@ -470,7 +470,7 @@ def get_categories_info(
     """
 
     query = (
-        "SELECT page_id, COUNT(DISTINCT cl_to) AS categories "
+        "SELECT page_id, COUNT(cl_to) AS categories "
         "FROM page "
         "INNER JOIN categorylinks "
         "    ON cl_from=page_id "
