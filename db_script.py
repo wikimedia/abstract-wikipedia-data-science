@@ -1,9 +1,14 @@
 ## imports
 import pandas as pd
 import argparse
+import pymysql
 
 import utils.db_access as db_acc
 import constants
+
+pymysql.converters.encoders[np.int64] = pymysql.converters.escape_int
+pymysql.converters.conversions = pymysql.converters.encoders.copy()
+pymysql.converters.conversions.update(pymysql.converters.decoders)
 
 
 def save_to_db(entries, db, user_db_port=None, user=None, password=None):
@@ -122,16 +127,10 @@ def get_data(dbs, replicas_port=None, user_db_port=None, user=None, password=Non
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Updates Lua scripts in database in Toolforge, fetching info from database replicas. "
-        "To use from local PC, use flag --local and all the additional flags needed for "
+        "To use from local PC, provide all the additional flags needed for "
         "establishing connection through ssh tunneling."
         "More help available at "
         "https://wikitech.wikimedia.org/wiki/Help:Toolforge/Database#SSH_tunneling_for_local_testing_which_makes_use_of_Wiki_Replica_databases"
-    )
-    parser.add_argument(
-        "--local",
-        "-l",
-        action="store_true",
-        help="Connection is initiated from local pc.",
     )
     local_data = parser.add_argument_group(
         title="Info for connecting to Toolforge from local pc"
@@ -140,26 +139,28 @@ if __name__ == "__main__":
         "--replicas-port",
         "-r",
         type=int,
+        default=None,
         help="Port for connecting to meta table through ssh tunneling, if used.",
     )
     local_data.add_argument(
         "--user-db-port",
         "-udb",
         type=int,
+        default=None,
         help="Port for connecting to tables, created by user in Toolforge, "
         "through ssh tunneling, if used.",
     )
     local_data.add_argument(
-        "--user", "-u", type=str, help="Toolforge username of the tool."
+        "--user", "-u", type=str, default=None, help="Toolforge username of the tool."
     )
     local_data.add_argument(
-        "--password", "-p", type=str, help="Toolforge password of the tool."
+        "--password",
+        "-p",
+        type=str,
+        default=None,
+        help="Toolforge password of the tool.",
     )
     args = parser.parse_args()
 
-    if not args.local:
-        dbs = get_dbs()
-        get_data(dbs)
-    else:
-        dbs = get_dbs(args.user_db_port, args.user, args.password)
-        get_data(dbs, args.replicas_port, args.user_db_port, args.user, args.password)
+    dbs = get_dbs(args.user_db_port, args.user, args.password)
+    get_data(dbs, args.replicas_port, args.user_db_port, args.user, args.password)

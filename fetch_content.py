@@ -451,7 +451,7 @@ if __name__ == "__main__":
         description="Updates Lua scripts and their additional info in database in Toolforge, "
         "fetching info from Wikimedia API. For testing and parallelization sake, use start-idx and end-idx "
         "parameters to choose which wikis from Sources table will be worked with."
-        "To use from local PC, use flag --local and all the additional flags needed for "
+        "To use from local PC, provide all the additional flags needed for "
         "establishing connection through ssh tunneling."
         "More help available at "
         "https://wikitech.wikimedia.org/wiki/Help:Toolforge/Database#SSH_tunneling_for_local_testing_which_makes_use_of_Wiki_Replica_databases"
@@ -472,13 +472,6 @@ if __name__ == "__main__":
         action="store_true",
         help="Whether content should be revised.",
     )
-
-    parser.add_argument(
-        "--local",
-        "-l",
-        action="store_true",
-        help="Connection is initiated from local pc.",
-    )
     local_data = parser.add_argument_group(
         title="Info for connecting to Toolforge from local pc"
     )
@@ -486,27 +479,27 @@ if __name__ == "__main__":
         "--user-db-port",
         "-udb",
         type=int,
+        default=None,
         help="Port for connecting to tables, created by user in Toolforge, "
         "through ssh tunneling, if used.",
     )
     local_data.add_argument(
-        "--user", "-u", type=str, help="Toolforge username of the tool."
+        "--user", "-u", type=str, default=None, help="Toolforge username of the tool."
     )
     local_data.add_argument(
-        "--password", "-p", type=str, help="Toolforge password of the tool."
+        "--password",
+        "-p",
+        type=str,
+        default=None,
+        help="Toolforge password of the tool.",
     )
     args = parser.parse_args()
 
     if args.start_idx > args.end_idx:
         sys.exit("Error: Ending index must be greater than start index.")
 
-    if not args.local:
-        wikis = get_wiki_list(args.start_idx, args.end_idx)
-        get_contents(wikis, args.revise)
-        get_missed_contents(wikis=wikis)
-    else:
-        wikis = get_wiki_list(
-            args.start_idx, args.end_idx, args.user_db_port, args.user, args.password
-        )
-        get_contents(wikis, args.revise, args.user_db_port, args.user, args.password)
-        get_missed_contents(wikis, args.user_db_port, args.user, args.password)
+    wikis = get_wiki_list(
+        args.start_idx, args.end_idx, args.user_db_port, args.user, args.password
+    )
+    get_contents(wikis, args.revise, args.user_db_port, args.user, args.password)
+    get_missed_contents(wikis, args.user_db_port, args.user, args.password)
