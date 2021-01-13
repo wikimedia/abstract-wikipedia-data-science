@@ -1,4 +1,3 @@
-## imports
 import sys
 import mwapi
 import toolforge
@@ -75,10 +74,10 @@ def save_content(
     )
 
     query = (
-        "insert into Scripts(dbname, page_id, title, sourcecode, touched,"
-        " in_api, in_database, length, content_model, lastrevid, url) "
-        "             values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)\n"
-        "on duplicate key update title = %s, sourcecode = %s, touched = %s, in_api = %s, in_database = %s,"
+        "INSERT INTO Scripts(dbname, page_id, title, sourcecode, touched, "
+        "in_api, in_database, length, content_model, lastrevid, url) "
+        "VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+        "ON DUPLICATE KEY UPDATE title = %s, sourcecode = %s, touched = %s, in_api = %s, in_database = %s, "
         "length = %s, content_model = %s, lastrevid = %s, url = %s, is_missed=%s"
     )
     try:
@@ -86,7 +85,7 @@ def save_content(
             constants.DATABASE_NAME, user_db_port, user, password
         )
         with conn.cursor() as cur:
-            cur.execute("select dbname from Sources where url = %s", wiki)
+            cur.execute("SELECT dbname FROM Sources WHERE url = %s", wiki)
             dbname = cur.fetchone()[0]
             for index, elem in data_df.iterrows():
                 time = elem["touched"].replace("T", " ").replace("Z", " ")
@@ -137,16 +136,16 @@ def save_missed_content(wiki, missed, user_db_port=None, user=None, password=Non
     missed_df = pd.DataFrame(missed, columns=["id"])
 
     query = (
-        "insert into Scripts(dbname, page_id, in_api, is_missed) "
-        "             values(%s, %s, %s, %s)\n"
-        "on duplicate key update in_api = %s, is_missed = %s"
+        "INSERT INTO Scripts(dbname, page_id, in_api, is_missed) "
+        "values(%s, %s, %s, %s) "
+        "ON DUPLICATE KEY UPDATE in_api = %s, is_missed = %s"
     )
     try:
         conn = db_acc.connect_to_user_database(
             constants.DATABASE_NAME, user_db_port, user, password
         )
         with conn.cursor() as cur:
-            cur.execute("select dbname from Sources where url = %s", wiki)
+            cur.execute("SELECT dbname FROM Sources WHERE url = %s", wiki)
             dbname = cur.fetchone()[0]
             for index, elem in missed_df.iterrows():
                 cur.execute(query, [dbname, elem["id"], 1, 1, 1, 1])
@@ -304,11 +303,11 @@ def get_db_map(wikis=[], dbs=[], user_db_port=None, user=None, password=None):
     if len(wikis) > 0:
         placeholders = ",".join("%s" for _ in wikis)
         query_input = wikis
-        query = "select dbname, url from Sources where url in (%s)" % placeholders
+        query = "SELECT dbname, url FROM Sources WHERE url IN (%s)" % placeholders
     else:
         placeholders = ",".join("%s" for _ in dbs)
         query_input = dbs
-        query = "select dbname, url from Sources where dbname in (%s)" % placeholders
+        query = "SELECT dbname, url FROM Sources WHERE dbname IN (%s)" % placeholders
 
     db_map = {}
 
@@ -418,7 +417,7 @@ def get_missed_contents(wikis, user_db_port=None, user=None, password=None):
         wikis=wikis, user_db_port=user_db_port, user=user, password=password
     )
     query = (
-        "select page_id, dbname from Scripts where dbname in (%s) and in_api=1 and is_missed=1"
+        "SELECT page_id, dbname FROM Scripts WHERE dbname IN (%s) AND in_api=1 AND is_missed=1"
         % placeholders
     )
 

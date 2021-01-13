@@ -19,8 +19,8 @@ def remove_missed_contents(user_db_port, user, password):
             DATABASE_NAME, user_db_port, user, password
         )
         with conn.cursor() as cur:
-            cur.execute("delete from Scripts where is_missed=1")
-            cur.execute("delete from Scripts where in_api=0 or in_database=0")
+            cur.execute("DELETE FROM Scripts WHERE is_missed=1")
+            cur.execute("DELETE FROM Scripts WHERE in_api=0 OR in_database=0")
         conn.commit()
         conn.close()
     except Exception as err:

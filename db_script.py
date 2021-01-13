@@ -1,7 +1,7 @@
-## imports
 import pandas as pd
 import argparse
 import pymysql
+import numpy as np
 
 import utils.db_access as db_acc
 import constants
@@ -25,9 +25,9 @@ def save_to_db(entries, db, user_db_port=None, user=None, password=None):
     """
 
     query = (
-        "insert into Scripts(dbname, page_id, in_database, page_is_redirect, page_is_new) "
-        "             values(%s, %s, %s, %s, %s)\n"
-        "on duplicate key update in_database = %s, page_is_redirect = %s, page_is_new = %s"
+        "INSERT INTO Scripts(dbname, page_id, in_database, page_is_redirect, page_is_new) "
+        "VALUES(%s, %s, %s, %s, %s) "
+        "ON DUPLICATE KEY UPDATE in_database = %s, page_is_redirect = %s, page_is_new = %s"
     )
     try:
         conn = db_acc.connect_to_user_database(
@@ -76,7 +76,7 @@ def get_dbs(user_db_port=None, user=None, password=None):
         )
         with conn.cursor() as cur:
             cur.execute(
-                "select dbname from Sources where url is not NULL"
+                "SELECT dbname FROM Sources WHERE url IS NOT NULL"
             )  # all, except 'meta'
             ret = [db[0] for db in cur]
         conn.close()
@@ -108,8 +108,8 @@ def get_data(dbs, replicas_port=None, user_db_port=None, user=None, password=Non
                 ## Query
                 cur.execute("USE " + db + "_p")
                 SQL_Query = pd.read_sql_query(
-                    "SELECT page_id, page_is_redirect, page_is_new FROM page \
-                    WHERE page_content_model='Scribunto' AND page_namespace=828",
+                    "SELECT page_id, page_is_redirect, page_is_new FROM page "
+                    "WHERE page_content_model='Scribunto' AND page_namespace=828",
                     conn,
                 )
                 df_page = pd.DataFrame(SQL_Query).applymap(encode_if_necessary)

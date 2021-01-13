@@ -1,8 +1,6 @@
-## imports
 from fetch_content import *
 from db_script import encode_if_necessary
-
-import constants
+from constants import DATABASE_NAME
 import utils.db_access as db_acc
 
 
@@ -23,11 +21,11 @@ def get_only_db_pages(user_db_port=None, user=None, password=None):
 
     try:
         conn = db_acc.connect_to_user_database(
-            constants.DATABASE_NAME, user_db_port, user, password
+            DATABASE_NAME, user_db_port, user, password
         )
         with conn.cursor() as cur:
             SQL_Query = pd.read_sql_query(
-                "select page_id, dbname from Scripts where in_api = 0 and in_database = 1",
+                "SELECT page_id, dbname FROM Scripts WHERE in_api = 0 AND in_database = 1",
                 conn,
             )
             df = pd.DataFrame(SQL_Query).applymap(encode_if_necessary)

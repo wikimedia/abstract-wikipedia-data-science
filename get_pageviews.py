@@ -55,7 +55,11 @@ def get_pageviews_rest_api(title, wiki, date, all):
             print(response.status_code, response.reason)
 
     except Exception as err:
-        print("Something went wrong fetching from REST API.\n", err)
+        print(
+            "Something went wrong fetching from REST API for %s in %s.\n"
+            % (title, wiki),
+            err,
+        )
 
     return 0
 
@@ -84,7 +88,7 @@ def get_mapping(user_db_port, user, password):
 
 
 def get_pageviews(pageid, wiki, days):
-   """
+    """
     Get pageviews for a specific page using the WikiMedia PHP API.
 
     :param pageid: Id of the page whose pageviews to fetch.
@@ -110,7 +114,10 @@ def get_pageviews(pageid, wiki, days):
                 cnt += v
 
     except Exception as err:
-        print("Something went wrong fetching from API. \n", err)
+        print(
+            "Something went wrong fetching from API for %d in %s.\n" % (pageid, wiki),
+            err,
+        )
 
     return cnt
 
@@ -171,8 +178,8 @@ def get_transclusions(dbname, title, replicas_port, user, password):
         conn.close()
     except Exception as err:
         print(
-            "Something went wrong getting transclusions for %s -- %s.\n"
-            % (dbname, title),
+            "Something went wrong getting transclusions for %s in %s.\n"
+            % (title, dbname),
             err,
         )
 
@@ -208,7 +215,11 @@ def save_pageview(page_id, dbname, pageviews, add, user_db_port, user, password)
         conn.commit()
         conn.close()
     except Exception as err:
-        print("Something went wrong saving to db.\n", err)
+        print(
+            "Something went wrong saving to db (%d, %s, %d).\n"
+            % (page_id, dbname, pageviews),
+            err,
+        )
 
 
 def api2db_title(title):
@@ -278,12 +289,15 @@ def get_all_pageviews(replicas_port, user_db_port, user, password, all, rest_api
     days = 60 if all else 1
 
     for (dbname, module_page_id, title) in get_modules(user_db_port, user, password):
-
-        title = api2db_title(title)
-        pageviews = 0
-        wiki = db_map[dbname]
-
         try:
+
+            if title is None:
+                continue
+
+            title = api2db_title(title)
+            pageviews = 0
+            wiki = db_map[dbname]
+
             for page_id in get_transclusions(
                 dbname, title, replicas_port, user, password
             ):
@@ -302,7 +316,10 @@ def get_all_pageviews(replicas_port, user_db_port, user, password, all, rest_api
             )
 
         except Exception as err:
-            print("Something went wrong for page %s.\n" % title, err)
+            print(
+                "Something went wrong for page %d in %s.\n" % (module_page_id, dbname),
+                err,
+            )
 
 
 if __name__ == "__main__":
