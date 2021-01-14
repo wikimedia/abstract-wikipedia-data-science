@@ -5,6 +5,8 @@ import pymysql
 import argparse
 import mwapi
 import os
+import time
+from collections import defaultdict
 
 import utils.db_access as db_acc
 from db_script import encode_if_necessary, get_dbs
@@ -42,37 +44,54 @@ def query_data_generator(
     :return: dataframe
     """
 
-    try:
+    offset = 0
+    row_count = 100
+    retry_counter = defaultdict(int)
 
-        if replicas:
-            conn = db_acc.connect_to_replicas_database(
-                db, replicas_port, user, password
+    while True:
+        try:
+            offset_set = False
+
+            conn = (
+                db_acc.connect_to_replicas_database(db, replicas_port, user, password)
+                if replicas
+                else db_acc.connect_to_user_database(
+                    DATABASE_NAME, user_db_port, user, password
+                )
             )
-        else:
-            conn = db_acc.connect_to_user_database(
-                DATABASE_NAME, user_db_port, user, password
-            )
 
-        cur = conn.cursor()
+            cur = conn.cursor()
 
-        offset = 0
-        row_count = 100
-        while True:
             df = pd.read_sql(
                 query + " LIMIT %d OFFSET %d" % (row_count, offset), conn
             ).applymap(encode_if_necessary)
+
             offset += row_count
+            offset_set = True
+
             if len(df) == 0:
                 return
+
             yield df
 
-    except Exception as err:
-        print("Something went wrong. Could not query from %s \n" % db, err)
-        with open("missed_db_info.txt", "a") as file:
-            file.write(function_name + " " + db + "\n")
+        except pymysql.err.OperationalError as err:
+            if retry_counter[err] == 2:  # exits after 3 tries
+                raise Exception(err)
 
-    finally:
-        conn.close()
+            print("Retrying query from %s in 1 minutes..." % db)
+            if offset_set:
+                offset -= row_count
+            retry_counter[err] += 1
+            time.sleep(60)
+
+        except Exception as err:
+            print("Something went wrong. Could not query from %s \n" % db, err)
+            with open("missed_db_info.txt", "a") as file:
+                file.write(function_name + " " + db + "\n")
+            break
+
+        finally:
+            conn.close()
 
 
 def save_data(
