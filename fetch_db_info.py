@@ -23,12 +23,14 @@ pymysql.converters.conversions.update(pymysql.converters.decoders)
 def query_data_generator(
     query,
     function_name,
+    cols,
     db=None,
     replicas_port=None,
     user_db_port=None,
     user=None,
     password=None,
     replicas=True,
+    row_count=500,
 ):
     """
     Query database (db) and return outputs in chunks.
@@ -41,11 +43,12 @@ def query_data_generator(
     :param user: Toolforge username of the tool.
     :param password: Toolforge password of the tool.
     :param replicas: False if collecting data from toolsdb user database, True is collecting from other wikimedia databases.
+    :param row_count: Number of rows to get in one query from the database.
     :return: dataframe
     """
 
     offset = 0
-    row_count = 100
+    row_count = row_count
     retry_counter = defaultdict(int)
 
     while True:
@@ -61,10 +64,10 @@ def query_data_generator(
             )
 
             cur = conn.cursor()
-
-            df = pd.read_sql(
-                query + " LIMIT %d OFFSET %d" % (row_count, offset), conn
-            ).applymap(encode_if_necessary)
+            cur.execute(query + " LIMIT %d OFFSET %d" % (row_count, offset))
+            df = pd.DataFrame(cur.fetchall(), columns=cols).applymap(
+                encode_if_necessary
+            )
 
             offset += row_count
             offset_set = True
@@ -74,7 +77,7 @@ def query_data_generator(
 
             yield df
 
-        except pymysql.err.OperationalError as err:
+        except (pymysql.err.DatabaseError, pymysql.err.OperationalError) as err:
             if retry_counter[err] == 2:  # exits after 3 tries
                 raise Exception(err)
 
@@ -225,8 +228,24 @@ def get_revision_info(
         "GROUP BY page_id"
     )
 
+    cols = [
+        "page_id",
+        "edits",
+        "minor_edits",
+        "first_edit",
+        "last_edit",
+        "anonymous_edits",
+        "editors",
+    ]
     for df in query_data_generator(
-        query, function_name, db, replicas_port, user_db_port, user, password
+        query,
+        function_name,
+        cols,
+        db,
+        replicas_port,
+        user_db_port,
+        user,
+        password,
     ):
         save_data(df, db, function_name, user_db_port, user, password)
 
@@ -289,8 +308,9 @@ def get_iwlinks_info(
             db_cur.execute(create_query)
 
             for df in query_data_generator(
-                "SELECT * FROM iwlinks",
+                "SELECT iwl_from, iwl_prefix, iwl_title FROM iwlinks",
                 function_name,
+                ["iwl_from", "iwl_prefix", "iwl_title"],
                 db,
                 replicas_port,
                 user_db_port,
@@ -304,6 +324,7 @@ def get_iwlinks_info(
             for df in query_data_generator(
                 query,
                 function_name,
+                ["page_id", "dbname", "iwls"],
                 DATABASE_NAME,
                 replicas_port,
                 user_db_port,
@@ -358,8 +379,9 @@ def get_pagelinks_info(
         "GROUP BY page_id"
     )
 
+    cols = ["page_id", "pls"]
     for df in query_data_generator(
-        query, function_name, db, replicas_port, user_db_port, user, password
+        query, function_name, cols, db, replicas_port, user_db_port, user, password
     ):
         save_data(df, db, function_name, user_db_port, user, password)
 
@@ -391,8 +413,9 @@ def get_langlinks_info(
         "GROUP BY page_id"
     )
 
+    cols = ["page_id", "langs"]
     for df in query_data_generator(
-        query, function_name, db, replicas_port, user_db_port, user, password
+        query, function_name, cols, db, replicas_port, user_db_port, user, password
     ):
         save_data(df, db, function_name, user_db_port, user, password)
 
@@ -424,8 +447,17 @@ def get_templatelinks_info(
         "GROUP BY page_id"
     )
 
+    cola = ["page_id", "transcluded_in"]
     for df in query_data_generator(
-        query, function_name, db, replicas_port, user_db_port, user, password
+        query,
+        function_name,
+        cols,
+        db,
+        replicas_port,
+        user_db_port,
+        user,
+        password,
+        row_count=50,
     ):
         save_data(df, db, function_name, user_db_port, user, password)
 
@@ -447,7 +479,7 @@ def get_transclusions_info(
     """
 
     query = (
-        "SELECT tl_from, COUNT(tl_title) AS transclusions "
+        "SELECT tl_from AS page_id, COUNT(tl_title) AS transclusions "
         "FROM page "
         "INNER JOIN templatelinks "
         "    ON page_id=tl_from "
@@ -464,8 +496,9 @@ def get_transclusions_info(
         "GROUP BY tl_from"
     )
 
+    cols = ["page_id", "transclusions"]
     for df in query_data_generator(
-        query, function_name, db, replicas_port, user_db_port, user, password
+        query, function_name, cols, db, replicas_port, user_db_port, user, password
     ):
         save_data(df, db, function_name, user_db_port, user, password)
 
@@ -498,8 +531,9 @@ def get_categories_info(
         "GROUP BY page_id"
     )
 
+    cols = ["page_id", "categories"]
     for df in query_data_generator(
-        query, function_name, db, replicas_port, user_db_port, user, password
+        query, function_name, cols, db, replicas_port, user_db_port, user, password
     ):
         save_data(df, db, function_name, user_db_port, user, password)
 
@@ -529,8 +563,9 @@ def get_edit_protection_info(
         "    AND pr_type='edit'"
     )
 
+    cols = ["page_id", "pr_level_edit"]
     for df in query_data_generator(
-        query, function_name, db, replicas_port, user_db_port, user, password
+        query, function_name, cols, db, replicas_port, user_db_port, user, password
     ):
         save_data(df, db, function_name, user_db_port, user, password)
 
@@ -560,8 +595,9 @@ def get_move_protection_info(
         "    AND pr_type='move'"
     )
 
+    cols = ["page_id", "pr_level_move"]
     for df in query_data_generator(
-        query, function_name, db, replicas_port, user_db_port, user, password
+        query, function_name, cols, db, replicas_port, user_db_port, user, password
     ):
         save_data(df, db, function_name, user_db_port, user, password)
 
@@ -623,8 +659,17 @@ def get_most_common_tag_info(
         "GROUP BY tagcount.page_id"
     )
 
+    cols = ["page_id", "tags"]
     for df in query_data_generator(
-        query, function_name, db, replicas_port, user_db_port, user, password
+        query,
+        function_name,
+        cols,
+        db,
+        replicas_port,
+        user_db_port,
+        user,
+        password,
+        row_count=50,
     ):
         save_data(df, db, function_name, user_db_port, user, password)
 
