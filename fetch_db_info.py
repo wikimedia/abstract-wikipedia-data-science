@@ -49,52 +49,49 @@ def query_data_generator(
 
     offset = 0
     row_count = row_count
-    retry_counter = defaultdict(int)
+    retry_counter = 0
+    max_tries = 3
 
-    while True:
-        try:
-            offset_set = False
+    try:
+        conn = (
+            db_acc.connect_to_replicas_database(db, replicas_port, user, password)
+            if replicas
+            else db_acc.connect_to_user_database(
+                DATABASE_NAME, user_db_port, user, password
+            )
+        )
+        cur = conn.cursor()
 
-            conn = (
-                db_acc.connect_to_replicas_database(db, replicas_port, user, password)
-                if replicas
-                else db_acc.connect_to_user_database(
-                    DATABASE_NAME, user_db_port, user, password
+        while True:
+            try:
+                cur.execute(query + " LIMIT %d OFFSET %d" % (row_count, offset))
+                break
+            except (pymysql.err.DatabaseError, pymysql.err.OperationalError) as err:
+                if retry_counter == max_tries:
+                    raise Exception(err)
+                print(
+                    "Retrying query of '%s' from %s in 1 minute..."
+                    % (function_name, db)
                 )
-            )
+                retry_counter += 1
+                time.sleep(5)
 
-            cur = conn.cursor()
-            cur.execute(query + " LIMIT %d OFFSET %d" % (row_count, offset))
-            df = pd.DataFrame(cur.fetchall(), columns=cols).applymap(
-                encode_if_necessary
-            )
+        df = pd.DataFrame(cur.fetchall(), columns=cols).applymap(encode_if_necessary)
 
-            offset += row_count
-            offset_set = True
+        offset += row_count
 
-            if len(df) == 0:
-                return
+        if len(df) == 0:
+            return
 
-            yield df
+        yield df
 
-        except (pymysql.err.DatabaseError, pymysql.err.OperationalError) as err:
-            if retry_counter[err] == 2:  # exits after 3 tries
-                raise Exception(err)
+    except Exception as err:
+        print("Something went wrong. Could not query from %s \n" % db, err)
+        with open("missed_db_info.txt", "a") as file:
+            file.write(function_name + " " + db + "\n")
 
-            print("Retrying query of '%s' from %s in 1 minute..." % (function_name, db))
-            if offset_set:
-                offset -= row_count
-            retry_counter[err] += 1
-            time.sleep(60)
-
-        except Exception as err:
-            print("Something went wrong. Could not query from %s \n" % db, err)
-            with open("missed_db_info.txt", "a") as file:
-                file.write(function_name + " " + db + "\n")
-            break
-
-        finally:
-            conn.close()
+    finally:
+        conn.close()
 
 
 def save_data(
@@ -476,7 +473,6 @@ def get_templatelinks_info(
         user_db_port,
         user,
         password,
-        row_count=50,
     ):
         save_data(df, db, function_name, user_db_port, user, password)
 
@@ -688,7 +684,6 @@ def get_most_common_tag_info(
         user_db_port,
         user,
         password,
-        row_count=50,
     ):
         save_data(df, db, function_name, user_db_port, user, password)
 
