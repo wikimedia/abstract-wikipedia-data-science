@@ -74,7 +74,7 @@ def query_data_generator(
                     % (function_name, db)
                 )
                 retry_counter += 1
-                time.sleep(5)
+                time.sleep(60)
 
         df = pd.DataFrame(cur.fetchall(), columns=cols).applymap(encode_if_necessary)
 
@@ -130,47 +130,46 @@ def save_data(
             "%s",
         )
 
-    retry_counter = defaultdict(int)
+    retry_counter = 0
+    max_tries = 3
 
-    while True:
-        try:
-            conn = db_acc.connect_to_user_database(
-                DATABASE_NAME, user_db_port, user, password
-            )
-            with conn.cursor() as cur:
-                for index, elem in df.iterrows():
-                    if not custom:
-                        params = list(
-                            np.concatenate((elem.values[1:], elem.values[0:1]))
-                        )
-                    else:
-                        params = []
-                        for col in cols:
-                            params.append(elem[col])
-                    cur.execute(query, params)
-            conn.commit()
-            break
+    try:
+        conn = db_acc.connect_to_user_database(
+            DATABASE_NAME, user_db_port, user, password
+        )
 
-        except (pymysql.err.DatabaseError, pymysql.err.OperationalError) as err:
-            if retry_counter[err] == 2:  # exits after 3 tries
-                raise Exception(err)
+        while True:
+            try:
+                with conn.cursor() as cur:
+                    for index, elem in df.iterrows():
+                        if not custom:
+                            params = list(
+                                np.concatenate((elem.values[1:], elem.values[0:1]))
+                            )
+                        else:
+                            params = []
+                            for col in cols:
+                                params.append(elem[col])
+                        cur.execute(query, params)
+                conn.commit()
+                break
+            except (pymysql.err.DatabaseError, pymysql.err.OperationalError) as err:
+                if retry_counter == max_tries:
+                    raise Exception(err)
+                print(
+                    "Retrying saving of '%s' from %s in 1 minute..."
+                    % (function_name, dbname)
+                )
+                retry_counter += 1
+                time.sleep(60)
 
-            print(
-                "Retrying saving of '%s' from %s in 1 minute..."
-                % (function_name, dbname)
-            )
+    except Exception as err:
+        print("Something went wrong. Error saving pages from %s \n" % dbname, err)
+        with open("missed_db_info.txt", "a") as file:
+            file.write(function_name + " " + dbname + "\n")
 
-            retry_counter[err] += 1
-            time.sleep(60)
-
-        except Exception as err:
-            print("Something went wrong. Error saving pages from %s \n" % dbname, err)
-            with open("missed_db_info.txt", "a") as file:
-                file.write(function_name + " " + dbname + "\n")
-            break
-
-        finally:
-            conn.close()
+    finally:
+        conn.close()
 
 
 def get_interwiki(user_db_port=None, user=None, password=None):

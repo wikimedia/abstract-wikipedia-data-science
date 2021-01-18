@@ -1,6 +1,6 @@
 ## Add these to the end of crontab -e
 
-0 5 * * 1 jsub abstract-wikipedia-data-science/shell_scripts/wiki_parser.sh
+0 5 * * 1 jsub abstract-wikipedia-data-science/shell_scripts/wikis_parser.sh
 
 0 0 * * 6 jsub -N cron-api-1 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 0 166
 0 0 * * 6 jsub -N cron-api-2 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 167 167
