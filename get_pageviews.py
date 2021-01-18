@@ -191,7 +191,7 @@ def save_pageview(page_id, dbname, pageviews, add, user_db_port, user, password)
     :param page_id: The Id of the page whose pageviews is to be stored.
     :param dbname: Which database the module corresponds to.
     :param pageviews: The value to be stored in table.
-    :param add: Whether to add to the existing pageviews(when collecting daily data) or not.
+    :param add: Whether to add to the existing pageviews(when collecting daily/weekly data) or not.
     :param user: Toolforge username of the tool.
     :param password: Toolforge password of the tool.
     :return: None
@@ -280,13 +280,14 @@ def get_all_pageviews(replicas_port, user_db_port, user, password, all, rest_api
     :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
     :param user: Toolforge username of the tool.
     :param password: Toolforge password of the tool.
-    :param all: Set True to fetch all page views till yesterday. Else fetches pageviews only for yesterday.
+    :param all: Set True to fetch all page views till yesterday. Else fetches pageviews only for"
+    "           last week(php) or yesterday(REST).
     :param rest_api: If True, uses the REST API, else uses the PHP API.
     :return: None
     """
 
     db_map = get_mapping(user_db_port, user, password)
-    days = 60 if all else 1
+    days = 60 if all else 7
 
     for (dbname, module_page_id, title) in get_modules(user_db_port, user, password):
         try:
