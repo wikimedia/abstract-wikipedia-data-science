@@ -36,7 +36,7 @@ def query_data_generator(
 
     :param query: The SQL query to run.
     :param function_name: The function that was used to collect this data, useful for saving when data is missed due to errors.
-    :param cols: The name of the columns to be used in dataframe for the data collected with SQL. 
+    :param cols: The name of the columns to be used in dataframe for the data collected with SQL.
     :param db: The database from which the data was collected.
     :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
     :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
@@ -59,27 +59,32 @@ def query_data_generator(
                 DATABASE_NAME, user_db_port, user, password
             )
         )
-        cur = conn.cursor()
 
         while True:
             retry_counter = 0
-            while True:
-                try:
-                    cur.execute(query + " LIMIT %d OFFSET %d" % (row_count, offset))
-                    break
-                except (pymysql.err.DatabaseError, pymysql.err.OperationalError) as err:
-                    if retry_counter == max_tries:
-                        raise Exception(err)
-                    print(
-                        "Retrying query of '%s' from %s in 1 minute..."
-                        % (function_name, db)
-                    )
-                    retry_counter += 1
-                    time.sleep(60)
 
-            df = pd.DataFrame(cur.fetchall(), columns=cols).applymap(
-                encode_if_necessary
-            )
+            conn.ping()
+            with conn.cursor() as cur:
+                while True:
+                    try:
+                        cur.execute(query + " LIMIT %d OFFSET %d" % (row_count, offset))
+                        break
+                    except (
+                        pymysql.err.DatabaseError,
+                        pymysql.err.OperationalError,
+                    ) as err:
+                        if retry_counter == max_tries:
+                            raise Exception(err)
+                        print(
+                            "Retrying query of '%s' from %s in 1 minute..."
+                            % (function_name, db)
+                        )
+                        retry_counter += 1
+                        time.sleep(60)
+
+                df = pd.DataFrame(cur.fetchall(), columns=cols).applymap(
+                    encode_if_necessary
+                )
 
             offset += row_count
 
@@ -89,7 +94,7 @@ def query_data_generator(
             yield df
 
     except Exception as err:
-        print("Something went wrong. Could not query from %s \n" % db, err)
+        print("Something went wrong. Could not query from %s \n" % db, repr(err))
         with open("missed_db_info.txt", "a") as file:
             file.write(function_name + " " + db + "\n")
 
@@ -143,6 +148,7 @@ def save_data(
         retry_counter = 0
         while True:
             try:
+                conn.ping()
                 with conn.cursor() as cur:
                     for index, elem in df.iterrows():
                         if not custom:
@@ -167,7 +173,7 @@ def save_data(
                 time.sleep(60)
 
     except Exception as err:
-        print("Something went wrong. Error saving pages from %s \n" % dbname, err)
+        print("Something went wrong. Error saving pages from %s \n" % dbname, repr(err))
         with open("missed_db_info.txt", "a") as file:
             file.write(function_name + " " + dbname + "\n")
 
@@ -210,7 +216,7 @@ def get_interwiki(user_db_port=None, user=None, password=None):
                 cur.execute(query, (mp["prefix"], mp["url"], mp["url"]))
         conn.commit()
     except Exception as err:
-        print("Something went wrong. Could not get interwiki table\n", err)
+        print("Something went wrong. Could not get interwiki table\n", repr(err))
     finally:
         conn.close()
 
@@ -367,7 +373,9 @@ def get_iwlinks_info(
         conn_db.commit()
         conn_db.close()
     except Exception as err:
-        print("Something went wrong. Could not get iwlinks info of %s\n" % db, err)
+        print(
+            "Something went wrong. Could not get iwlinks info of %s\n" % db, repr(err)
+        )
 
 
 def get_pagelinks_info(
@@ -644,6 +652,7 @@ def get_most_common_tag_info(
         "    FROM change_tag "
         "    INNER JOIN change_tag_def "
         "        ON ct_tag_id=ctd_id "
+        "        AND ctd_user_defined=0 "
         "    INNER JOIN revision "
         "        ON ct_rev_id=rev_id "
         "    INNER JOIN page "
@@ -661,6 +670,7 @@ def get_most_common_tag_info(
         "        FROM change_tag "
         "        INNER JOIN change_tag_def "
         "            ON ct_tag_id=ctd_id "
+        "            AND ctd_user_defined=0 "
         "        INNER JOIN revision "
         "            ON ct_rev_id=rev_id "
         "        INNER JOIN page "
@@ -749,7 +759,7 @@ def get_missed_data(replicas_port=None, user_db_port=None, user=None, password=N
         success = True
 
     except Exception as err:
-        print("Something went wrong.\n", err)
+        print("Something went wrong.\n", repr(err))
 
     finally:
         if not success:
