@@ -42,6 +42,7 @@ create table Scripts(
     pr_level_edit varchar(32),
     pr_level_move varchar(32),
     tags text,
+    tag_count int default 0,
     pageviews int default 0,
     page_is_redirect bool default 0,
     page_is_new bool default 0,

@@ -19,6 +19,13 @@ pymysql.converters.conversions.update(pymysql.converters.decoders)
 ## Utils
 
 
+def close_conn(conn):
+    try:
+        conn.close()
+    except:
+        pass
+
+
 def query_data_generator(
     query,
     function_name,
@@ -51,55 +58,50 @@ def query_data_generator(
     row_count = row_count
     max_tries = 3
 
-    try:
-        conn = (
-            db_acc.connect_to_replicas_database(db, replicas_port, user, password)
-            if replicas
-            else db_acc.connect_to_user_database(
-                DATABASE_NAME, user_db_port, user, password
-            )
-        )
-
-        while True:
-            retry_counter = 0
-
-            conn.ping()
-            with conn.cursor() as cur:
-                while True:
-                    try:
-                        cur.execute(query + " LIMIT %d OFFSET %d" % (row_count, offset))
-                        break
-                    except (
-                        pymysql.err.DatabaseError,
-                        pymysql.err.OperationalError,
-                    ) as err:
-                        if retry_counter == max_tries:
-                            raise Exception(err)
-                        print(
-                            "Retrying query of '%s' from %s in 1 minute..."
-                            % (function_name, db)
+    while True:
+        retry_counter = 0
+        try:
+            while True:
+                try:
+                    conn = (
+                        db_acc.connect_to_replicas_database(
+                            db, replicas_port, user, password
                         )
-                        retry_counter += 1
-                        time.sleep(60)
-
-                df = pd.DataFrame(cur.fetchall(), columns=cols).applymap(
-                    encode_if_necessary
-                )
+                        if replicas
+                        else db_acc.connect_to_user_database(
+                            DATABASE_NAME, user_db_port, user, password
+                        )
+                    )
+                    with conn.cursor() as cur:
+                        cur.execute(query + " LIMIT %d OFFSET %d" % (row_count, offset))
+                        df = pd.DataFrame(cur.fetchall(), columns=cols).applymap(
+                            encode_if_necessary
+                        )
+                    close_conn(conn)
+                    break
+                except (
+                    pymysql.err.DatabaseError,
+                    pymysql.err.OperationalError,
+                ) as err:
+                    close_conn(conn)
+                    if retry_counter == max_tries:
+                        raise Exception(err)
+                    print(
+                        "Retrying query of '%s' from %s in 1 minute..."
+                        % (function_name, db)
+                    )
+                    retry_counter += 1
+                    time.sleep(60)
 
             offset += row_count
-
             if len(df) == 0:
                 return
-
             yield df
-
-    except Exception as err:
-        print("Something went wrong. Could not query from %s \n" % db, repr(err))
-        with open("missed_db_info.txt", "a") as file:
-            file.write(function_name + " " + db + "\n")
-
-    finally:
-        conn.close()
+        except Exception as err:
+            print("Something went wrong. Could not query from %s \n" % db, repr(err))
+            with open("missed_db_info.txt", "a") as file:
+                file.write(function_name + " " + db + "\n")
+            break
 
 
 def save_data(
@@ -141,14 +143,12 @@ def save_data(
     max_tries = 3
 
     try:
-        conn = db_acc.connect_to_user_database(
-            DATABASE_NAME, user_db_port, user, password
-        )
-
         retry_counter = 0
         while True:
             try:
-                conn.ping()
+                conn = db_acc.connect_to_user_database(
+                    DATABASE_NAME, user_db_port, user, password
+                )
                 with conn.cursor() as cur:
                     for index, elem in df.iterrows():
                         if not custom:
@@ -156,13 +156,13 @@ def save_data(
                                 np.concatenate((elem.values[1:], elem.values[0:1]))
                             )
                         else:
-                            params = []
-                            for col in cols:
-                                params.append(elem[col])
+                            params = [elem[col] for col in cols]
                         cur.execute(query, params)
                 conn.commit()
+                close_conn(conn)
                 break
             except (pymysql.err.DatabaseError, pymysql.err.OperationalError) as err:
+                close_conn(conn)
                 if retry_counter == max_tries:
                     raise Exception(err)
                 print(
@@ -176,9 +176,6 @@ def save_data(
         print("Something went wrong. Error saving pages from %s \n" % dbname, repr(err))
         with open("missed_db_info.txt", "a") as file:
             file.write(function_name + " " + dbname + "\n")
-
-    finally:
-        conn.close()
 
 
 def get_interwiki(user_db_port=None, user=None, password=None):
@@ -645,7 +642,7 @@ def get_most_common_tag_info(
     """
 
     query = (
-        "SELECT tagcount.page_id AS page_id, GROUP_CONCAT(ctd_name) AS tags "
+        "SELECT tagcount.page_id AS page_id, GROUP_CONCAT(ctd_name) AS tags , tagcount.tags AS tag_count "
         "FROM "
         "("
         "    SELECT page_id, ctd_name, COUNT(*) AS tags "
@@ -679,14 +676,15 @@ def get_most_common_tag_info(
         "            AND page_content_model='Scribunto' "
         "        GROUP BY page_id, ctd_name "
         "    ) AS tagcount "
-        "    GROUP BY page_id"
+        "    GROUP BY page_id "
+        "    HAVING most_common_tag_count>5 "
         ") AS mosttag "
         "ON mosttag.page_id=tagcount.page_id "
         "AND tagcount.tags=mosttag.most_common_tag_count "
         "GROUP BY tagcount.page_id"
     )
 
-    cols = ["page_id", "tags"]
+    cols = ["page_id", "tags", "tag_count"]
     for df in query_data_generator(
         query,
         function_name,
