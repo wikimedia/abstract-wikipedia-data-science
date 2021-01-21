@@ -6,7 +6,6 @@ import argparse
 import mwapi
 import os
 import time
-from collections import defaultdict
 
 import utils.db_access as db_acc
 from db_script import encode_if_necessary, get_dbs
@@ -37,6 +36,7 @@ def query_data_generator(
 
     :param query: The SQL query to run.
     :param function_name: The function that was used to collect this data, useful for saving when data is missed due to errors.
+    :param cols: The name of the columns to be used in dataframe for the data collected with SQL. 
     :param db: The database from which the data was collected.
     :param replicas_port: port for connecting to meta table through ssh tunneling, if used.
     :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
@@ -49,7 +49,6 @@ def query_data_generator(
 
     offset = 0
     row_count = row_count
-    retry_counter = 0
     max_tries = 3
 
     try:
@@ -63,27 +62,31 @@ def query_data_generator(
         cur = conn.cursor()
 
         while True:
-            try:
-                cur.execute(query + " LIMIT %d OFFSET %d" % (row_count, offset))
-                break
-            except (pymysql.err.DatabaseError, pymysql.err.OperationalError) as err:
-                if retry_counter == max_tries:
-                    raise Exception(err)
-                print(
-                    "Retrying query of '%s' from %s in 1 minute..."
-                    % (function_name, db)
-                )
-                retry_counter += 1
-                time.sleep(60)
+            retry_counter = 0
+            while True:
+                try:
+                    cur.execute(query + " LIMIT %d OFFSET %d" % (row_count, offset))
+                    break
+                except (pymysql.err.DatabaseError, pymysql.err.OperationalError) as err:
+                    if retry_counter == max_tries:
+                        raise Exception(err)
+                    print(
+                        "Retrying query of '%s' from %s in 1 minute..."
+                        % (function_name, db)
+                    )
+                    retry_counter += 1
+                    time.sleep(60)
 
-        df = pd.DataFrame(cur.fetchall(), columns=cols).applymap(encode_if_necessary)
+            df = pd.DataFrame(cur.fetchall(), columns=cols).applymap(
+                encode_if_necessary
+            )
 
-        offset += row_count
+            offset += row_count
 
-        if len(df) == 0:
-            return
+            if len(df) == 0:
+                return
 
-        yield df
+            yield df
 
     except Exception as err:
         print("Something went wrong. Could not query from %s \n" % db, err)
@@ -130,7 +133,6 @@ def save_data(
             "%s",
         )
 
-    retry_counter = 0
     max_tries = 3
 
     try:
@@ -138,6 +140,7 @@ def save_data(
             DATABASE_NAME, user_db_port, user, password
         )
 
+        retry_counter = 0
         while True:
             try:
                 with conn.cursor() as cur:

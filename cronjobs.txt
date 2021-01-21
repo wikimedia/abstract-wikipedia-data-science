@@ -12,7 +12,7 @@
 
 15 1 * * 6 jsub -N cron-db-page -once -quiet abstract-wikipedia-data-science/shell_scripts/db_script.sh
 
-0 2 * * 6 jsub -N cron-db-1 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh get_edit_protection_info get_move_protection_$
+0 2 * * 6 jsub -N cron-db-1 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh get_pagelinks_info get_langlinks_info get_categories_info get_edit_protection_info get_move_protection_info get_most_common_tag_info
 0 2 * * 6 jsub -N cron-db-2 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh get_transclusions_info
 0 2 * * 6 jsub -N cron-db-rev -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh get_revision_info
 0 2 * * 6 jsub -N cron-db-tl -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh get_templatelinks_info
