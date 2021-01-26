@@ -3,12 +3,13 @@
 0 5 * * 1 jsub abstract-wikipedia-data-science/shell_scripts/wikis_parser.sh
 
 0 0 * * 6 jsub -N cron-api-1 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 0 166
-0 0 * * 6 jsub -N cron-api-2 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 167 167
-0 0 * * 6 jsub -N cron-api-3 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 168 221
-0 0 * * 6 jsub -N cron-api-4 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 222 500
-0 0 * * 6 jsub -N cron-api-5 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 501 690
-0 0 * * 6 jsub -N cron-api-6 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 691 696
-0 0 * * 6 jsub -N cron-api-7 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 697 800
+0 0 * * 6 jsub -N cron-api-2 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 167 170
+0 0 * * 6 jsub -N cron-api-3 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 171 221
+0 0 * * 6 jsub -N cron-api-4 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 222 300
+0 0 * * 6 jsub -N cron-api-5 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 301 500
+0 0 * * 6 jsub -N cron-api-6 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 501 690
+0 0 * * 6 jsub -N cron-api-7 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 691 710
+0 0 * * 6 jsub -N cron-api-8 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 711 800
 
 15 1 * * 6 jsub -N cron-db-page -once -quiet abstract-wikipedia-data-science/shell_scripts/db_script.sh
 

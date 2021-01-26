@@ -9,7 +9,7 @@ import utils.db_access as db_acc
 from constants import DATABASE_NAME
 
 
-def get_pageviews_rest_api(title, wiki, date, all):
+def get_pageviews_rest_api(title, wiki, all):
     """
     Get pageviews for a specific page using the WikiMedia REST API.
 
@@ -24,9 +24,12 @@ def get_pageviews_rest_api(title, wiki, date, all):
         title = quote_plus(title)
         date_from = "20000101"
         granularity = "monthly"
+        ## giving todays date will fetch data till last month
+        date = datetime.now().strftime("%Y%m%d")
         if not all:
-            date_from = date
-            granularity = "daily"
+            ## The first of last month
+            date_from = datetime.now() - timedelta(30)
+            date_from = datetime(date_from.year, date_from.month, 1).strftime("%Y%m%d")
 
         url = (
             "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/"
@@ -138,7 +141,7 @@ def get_modules(user_db_port, user, password):
         )
 
         with conn.cursor() as cur:
-            cur.execute("SELECT dbname, page_id, title FROM Scripts")
+            cur.execute("SELECT dbname, page_id FROM Scripts")
             for data in cur:
                 yield data
 
@@ -191,7 +194,7 @@ def save_pageview(page_id, dbname, pageviews, add, user_db_port, user, password)
     :param page_id: The Id of the page whose pageviews is to be stored.
     :param dbname: Which database the module corresponds to.
     :param pageviews: The value to be stored in table.
-    :param add: Whether to add to the existing pageviews(when collecting daily/weekly data) or not.
+    :param add: Whether to add to the existing pageviews(when collecting monthly data) or not.
     :param user: Toolforge username of the tool.
     :param password: Toolforge password of the tool.
     :return: None
@@ -222,19 +225,6 @@ def save_pageview(page_id, dbname, pageviews, add, user_db_port, user, password)
         )
 
 
-def api2db_title(title):
-    """
-    Turns namespace included page title into only page title.
-    Like 'Module:Yesno' to 'Yesno'
-
-    :param title: The string to format.
-    :return: Formatted page title.
-    """
-
-    ix = title.find(":")
-    return title if ix == -1 else title[ix + 1 :]
-
-
 def get_title(dbname, page_id, replicas_port, user, password):
     """
     Get title of the page with id as `page_id`.
@@ -262,16 +252,6 @@ def get_title(dbname, page_id, replicas_port, user, password):
         exit(1)
 
 
-def get_date():
-    """
-    Gets yesterdays date in YYYYMMDD format.
-
-    :return: Date as string.
-    """
-
-    return datetime.date(datetime.now() - timedelta(1)).strftime("%Y%m%d")
-
-
 def get_all_pageviews(replicas_port, user_db_port, user, password, all, rest_api):
     """
     Get pageviews for all pages which transclude modules and save them.
@@ -281,21 +261,21 @@ def get_all_pageviews(replicas_port, user_db_port, user, password, all, rest_api
     :param user: Toolforge username of the tool.
     :param password: Toolforge password of the tool.
     :param all: Set True to fetch all page views till yesterday. Else fetches pageviews only for"
-    "           last week(php) or yesterday(REST).
+    "           last month.
     :param rest_api: If True, uses the REST API, else uses the PHP API.
     :return: None
     """
 
     db_map = get_mapping(user_db_port, user, password)
-    days = 60 if all else 7
+    days = 60 if all else 30
 
-    for (dbname, module_page_id, title) in get_modules(user_db_port, user, password):
+    for (dbname, module_page_id) in get_modules(user_db_port, user, password):
         try:
 
-            if title is None:
+            if module_page_id is None:
                 continue
 
-            title = api2db_title(title)
+            title = get_title(dbname, module_page_id, replicas_port, user, password)
             pageviews = 0
             wiki = db_map[dbname]
 
@@ -306,7 +286,6 @@ def get_all_pageviews(replicas_port, user_db_port, user, password, all, rest_api
                     pageviews += get_pageviews_rest_api(
                         get_title(dbname, page_id, replicas_port, user, password),
                         wiki,
-                        get_date(),
                         all,
                     )
                 else:
@@ -337,14 +316,14 @@ if __name__ == "__main__":
         action="store_true",
         help="Whether to use REST API. Uses PHP API if not set. "
         "REST API collects pageviews since July, 2015 whereas PHP API gets data for the last 60 days only. "
-        "To collect daily data, both work the same (although values differ due to internal API caching)",
+        "To collect monthly data, both work the same (although values differ due to internal API caching)",
     )
     parser.add_argument(
         "--all-days",
         "-d",
         action="store_true",
-        help="Whether to get pageviews `till today` or `only today`. "
-        "Intended usage: Use it on initial run and on subsequent daily runs avoid it to get daily data only.",
+        help="Whether to get pageviews `till today` or `only last month`. "
+        "Intended usage: Use it on initial run and on subsequent monthly runs avoid it to get monthly data only.",
     )
     local_data = parser.add_argument_group(
         title="Info for connecting to Toolforge from local pc"
