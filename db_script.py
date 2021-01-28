@@ -4,6 +4,7 @@ import pymysql
 import numpy as np
 
 import utils.db_access as db_acc
+from utils.db_query import encode_if_necessary, get_dbs
 import constants
 
 pymysql.converters.encoders[np.int64] = pymysql.converters.escape_int
@@ -50,37 +51,6 @@ def save_to_db(entries, db, user_db_port=None, user=None, password=None):
                 )
         conn.commit()
         conn.close()
-    except Exception as err:
-        print("Something went wrong.\n", err)
-        exit(1)
-
-
-def encode_if_necessary(b):
-    if type(b) is bytes:
-        return b.decode("utf8")
-    return b
-
-
-def get_dbs(user_db_port=None, user=None, password=None):
-    """
-    Returns a list of all the dbnames from Sources table.
-
-    :param user_db_port: Port for connecting to local Sources table through ssh tunneling, if used.
-    :param user: Toolforge username of the tool.
-    :param password: Toolforge password of the tool.
-    :return: list
-    """
-    try:
-        conn = db_acc.connect_to_user_database(
-            constants.DATABASE_NAME, user_db_port, user, password
-        )
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT dbname FROM Sources WHERE url IS NOT NULL"
-            )  # all, except 'meta'
-            ret = [db[0] for db in cur]
-        conn.close()
-        return ret
     except Exception as err:
         print("Something went wrong.\n", err)
         exit(1)

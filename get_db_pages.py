@@ -1,5 +1,5 @@
 from fetch_content import *
-from db_script import encode_if_necessary
+from utils.db_query import encode_if_necessary
 from constants import DATABASE_NAME
 import utils.db_access as db_acc
 
