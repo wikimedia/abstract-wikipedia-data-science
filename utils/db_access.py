@@ -57,7 +57,9 @@ def connect_to_replicas_database(db_name, replicas_port=None, user=None, passwor
                 cur.execute("use " + db_name)
             conn.commit()
         else:
-            conn = toolforge.connect(dbname=db_name, connect_timeout=1000)
+            conn = toolforge.connect(
+                dbname=db_name, connect_timeout=1000, cluster="analytics"
+            )
 
         return conn
     except pymysql.err.OperationalError as err:
