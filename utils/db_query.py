@@ -2,7 +2,9 @@ import toolforge
 import pandas as pd
 import numpy as np
 import pymysql
+import time
 import utils.db_access as db_acc
+from constants import DATABASE_NAME
 
 pymysql.converters.encoders[np.int64] = pymysql.converters.escape_int
 pymysql.converters.conversions = pymysql.converters.encoders.copy()
@@ -26,7 +28,7 @@ def get_dbs(user_db_port=None, user=None, password=None):
     """
     try:
         conn = db_acc.connect_to_user_database(
-            constants.DATABASE_NAME, user_db_port, user, password
+            DATABASE_NAME, user_db_port, user, password
         )
         with conn.cursor() as cur:
             cur.execute(
