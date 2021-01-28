@@ -1,6 +1,6 @@
 # Abstract Wikipedia Data Science
 
-Repository for fetching and analyzing community functions from different Wikipedias.
+Repository for fetching and analyzing community functions across all wiki projects.
 
 This project is Outreachy 21 task, more info can be found in [phabricator](https://phabricator.wikimedia.org/T263678).
 
@@ -52,14 +52,22 @@ is based on _Sources_ table order).
 
 The order to run the scripts is:
 
-1. wikis_parser.py
-2. fetch_content.py
-3. db_script.py
-4. get_db_pages.py
+1. wikis_parser.sh
+2. fetch_content.sh
+3. db_script.sh
+
+   - db_script.py
+   - get_db_pages.py
+   - remove_missed.py
+
+4. fetch_db_info.sh
+5. get_pageviews.sh
 
 As running some scripts require quite a lot of time and computations, when in Toolforge environment,
 it is recommended to use [jsub](https://wikitech.wikimedia.org/wiki/Help:Toolforge/Grid#Submitting_simple_one-off_jobs_using_'jsub').
 You can submit a jsub job by using corresponding script from _shell_scripts_ folder.
+
+We run these scripts as cronjobs. A list of all jobs set up for cron can be found in [cronjobs.txt](cronjobs.txt). It is recommended to view this file to see how exactly the scripts are run.
 
 #### What python files are doing
 
@@ -69,21 +77,33 @@ You can submit a jsub job by using corresponding script from _shell_scripts_ fol
 
 2. fetch_content.py
 
-   Collects full info about Scribunto modules from the list of the wikis, stored in Sources, using Wikimedia API;
+   Collects source code of Scribunto modules from the list of the wikis, stored in Sources, using Wikimedia API;
    saves this info to Scripts table.
 
    Can be used to revise the info about pages, stored in the Scripts table. For this, use `--revise` argument.
 
 3. db_script.py
 
-   Collects basic info (page_id, title) about Scribunto modules from the list of the wikis, stored in Sources,
-   using database replicas; saves this info to Scripts table or updates in_database flag, if the same thing
+   Collects basic info (page_id) about Scribunto modules from the list of the wikis, stored in Sources,
+   using database replicas; saves this info to Scripts table or updates `in_database` flag, if the same thing
    was obtained through API requests.
 
 4. get_db_pages.py
 
-   Collects additional info about Scribunto modules, whose info was fetched from database replicas, but didn't appear
+   Collects source code of Scribunto modules, whose info was fetched from database replicas, but didn't appear
    in API request results; saves this info to Scripts table.
+
+5. remove_missed.py
+
+   Remove pages from Scripts table with incomplete information (i.e. page is missing from either API or database).
+
+6. fetch_db_info.py
+
+   Collect statistical data about the pages from various database tables. For example number of edits, number of editors, pages module is transcluded in etc.
+
+7. get_pageviews.py
+
+   Fetch and sum pageviews of all pages that transclude a module, for all modules.
 
 ### How to use code remotely
 
@@ -125,3 +145,5 @@ Scheduling script work is useful to automatically update contents of user's data
 Use `crontab -e` and add to the end something like
 `0 0 * * * jsub abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 0 10`.
 This example will run every day at the midnight - more detailed explanation is available after running `crontab -e`.
+
+A list of all jobs set up for cron can be found in [cronjobs.txt](cronjobs.txt).
