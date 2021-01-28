@@ -310,7 +310,6 @@ def get_templatelinks_info(
         user,
         password,
     ):
-        print(len(df))
         save_data(df, db, function_name, user_db_port, user, password)
 
 
