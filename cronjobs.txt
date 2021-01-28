@@ -1,24 +1,24 @@
 ## Add these to the end of crontab -e
 
-0 0 * * * jsub -N cron-wiki-1 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 0 50
-0 0 * * * jsub -N cron-wiki-2 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 51 100
-0 0 * * * jsub -N cron-wiki-3 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 101 150
-0 0 * * * jsub -N cron-wiki-4a -once -quiet abstract-wikipedia-data-science/fetch_content.sh 151 166
-0 0 * * * jsub -N cron-wiki-4b -once -quiet abstract-wikipedia-data-science/fetch_content.sh 167 167
-0 0 * * * jsub -N cron-wiki-4c -once -quiet abstract-wikipedia-data-science/fetch_content.sh 168 200
-0 0 * * * jsub -N cron-wiki-5a -once -quiet abstract-wikipedia-data-science/fetch_content.sh 201 221
-0 0 * * * jsub -N cron-wiki-5b -once -quiet abstract-wikipedia-data-science/fetch_content.sh 222 250
-0 0 * * * jsub -N cron-wiki-6 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 251 300
-0 0 * * * jsub -N cron-wiki-7 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 301 350
-0 0 * * * jsub -N cron-wiki-8 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 351 400
-0 0 * * * jsub -N cron-wiki-9 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 401 450
-0 0 * * * jsub -N cron-wiki-10 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 451 500
-0 0 * * * jsub -N cron-wiki-11 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 501 550
-0 0 * * * jsub -N cron-wiki-12 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 551 600
-0 0 * * * jsub -N cron-wiki-13 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 601 690
-0 0 * * * jsub -N cron-wiki-14a -once -quiet abstract-wikipedia-data-science/fetch_content.sh 691 696
-0 0 * * * jsub -N cron-wiki-14b -once -quiet abstract-wikipedia-data-science/fetch_content.sh 697 717
-0 0 * * * jsub -N cron-wiki-15 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 718 750
-0 0 * * * jsub -N cron-wiki-16 -once -quiet abstract-wikipedia-data-science/fetch_content.sh 751 800
+0 5 * * 1 jsub abstract-wikipedia-data-science/shell_scripts/wikis_parser.sh
 
-0 2 * * * jsub -N cron-db -once -quiet abstract-wikipedia-data-science/db_script.sh
+0 0 * * 6 jsub -N cron-api-1 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 0 166
+0 0 * * 6 jsub -N cron-api-2 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 167 170
+0 0 * * 6 jsub -N cron-api-3 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 171 221
+0 0 * * 6 jsub -N cron-api-4 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 222 300
+0 0 * * 6 jsub -N cron-api-5 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 301 500
+0 0 * * 6 jsub -N cron-api-6 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 501 690
+0 0 * * 6 jsub -N cron-api-7 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 691 710
+0 0 * * 6 jsub -N cron-api-8 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_content.sh 711 800
+
+15 1 * * 6 jsub -N cron-db-page -once -quiet abstract-wikipedia-data-science/shell_scripts/db_script.sh
+
+0 2 * * 6 jsub -N cron-db-1 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh get_pagelinks_info get_langlinks_info get_categories_info get_edit_protection_info get_move_protection_info get_most_common_tag_info
+0 2 * * 6 jsub -N cron-db-2 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh get_transclusions_info
+0 2 * * 6 jsub -N cron-db-rev -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh get_revision_info
+0 2 * * 6 jsub -N cron-db-tl -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh get_templatelinks_info
+0 2 * * 6 jsub -N cron-db-iwl -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh get_iwlinks_info
+
+0 0 * * 7 jsub -N cron-db-gm -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh gm
+
+0 3 * * 6 jsub -N pgview -once -quiet abstract-wikipedia-data-science/shell_scripts/get_pageviews.sh
