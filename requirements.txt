@@ -3,3 +3,6 @@ mwapi
 pandas
 PyMySQL
 numpy
+edlib
+polyleven
+requests
