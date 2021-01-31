@@ -46,5 +46,7 @@ def levenshtein_clasterization(df):
         min_samples=1,
         metric='precomputed').fit(dam_lev)
     labels = clustering.labels_
+    res = df.assign(group=labels)
 
+    return res
 
