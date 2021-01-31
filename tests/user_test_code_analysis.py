@@ -1,10 +1,33 @@
 import argparse
+import pandas as pd
 
 from .. import code_analysis
 
 import utils.db_access as db_acc
-from utils.db_query import query_data_generator, save_data, get_dbs
-from constants import DATABASE_NAME
+import utils.db_query
+from constants import DATABASE_NAME, ANALYSIS_BATCH_SIZE, ANALYSIS_TEST_OUT_FILE
+
+
+def print_clustering_to_md(df, full_output=False):
+    df = df.sort_values(by=['group'])
+
+    with open(ANALYSIS_TEST_OUT_FILE, 'w') as f:
+        if not full_output:
+            # For non-unique entries
+            print("_Printing only groups with multiple items_\n", file=f)
+            df = df[df.duplicated(subset=['group'], keep=False)]
+        else:
+            # For all entries
+            print("_Printing all groups with items_\n", file=f)
+
+        for elem in df.group.tolist():
+            print("## Group " + str(elem) + "\n", file=f)
+            curr_group_df = df.where(df['group'] == elem)
+            for i, curr_elem in enumerate(curr_group_df.group.tolist()):
+                print("#### Title: '" + curr_group_df.iloc[i]['title'] + "'\n", file=f)
+                print("```lua\n" + curr_group_df.iloc[i]['sourcecode'] + "\n```'\n", file=f)
+
+    print("Printing test results finished")
 
 
 def test_levenshtein_clasterization(user_db_port=None, user=None, password=None):
@@ -17,14 +40,22 @@ def test_levenshtein_clasterization(user_db_port=None, user=None, password=None)
         conn = db_acc.connect_to_user_database(
             DATABASE_NAME, user_db_port, user, password
         )
+        query = """
+        select dbname, title, sourcecode, length
+        from Scripts
+        order by rand()
+        limit %s
+        """
+
         with conn.cursor() as cur:
-            cur.execute(
-                ""
-            )
-        conn.close()
+            cur.execute(query, str(ANALYSIS_BATCH_SIZE))
+            df = pd.DataFrame(cur, columns=['dbname', 'title', 'sourcecode', 'length'])
+
+            res = code_analysis.levenshtein_clasterization(df)
+            print_clustering_to_md(res)
+        utils.db_query.close_conn(conn)
     except Exception as err:
         print("Something went wrong.\n", err)
-        exit(1)
 
 
 if __name__ == "__main__":
@@ -34,6 +65,13 @@ if __name__ == "__main__":
         "establishing connection through ssh tunneling."
         "More help available at "
         "https://wikitech.wikimedia.org/wiki/Help:Toolforge/Database#SSH_tunneling_for_local_testing_which_makes_use_of_Wiki_Replica_databases"
+    )
+    parser.add_argument(
+        "--full-output",
+        "-f",
+        action="store_true",
+        help="Output file will have all clustering results."
+             "If not set, only groups with more then one entry will be printed."
     )
     local_data = parser.add_argument_group(
         title="Info for connecting to Toolforge from local pc"
