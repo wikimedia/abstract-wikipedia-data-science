@@ -8,6 +8,8 @@ from polyleven import levenshtein as lev_dist
 
 from sklearn.cluster import DBSCAN
 
+import constants
+
 
 def generate_distance_matrix(df):
     dam_lev = []
@@ -39,5 +41,10 @@ def generate_distance_matrix(df):
 
 def levenshtein_clasterization(df):
     dam_lev = generate_distance_matrix(df)
-    clustering = DBSCAN(eps=0.05, min_samples=1, metric='precomputed').fit(dam_lev)
+    clustering = DBSCAN(
+        eps=constants.ANALYSIS_CLUSTERING_EPS,
+        min_samples=1,
+        metric='precomputed').fit(dam_lev)
+    labels = clustering.labels_
+
 
