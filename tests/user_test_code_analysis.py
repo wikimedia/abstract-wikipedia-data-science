@@ -1,11 +1,11 @@
 import argparse
 import pandas as pd
 
-from .. import code_analysis
-
 import utils.db_access as db_acc
 import utils.db_query
 from constants import DATABASE_NAME, ANALYSIS_BATCH_SIZE, ANALYSIS_TEST_OUT_FILE
+
+import code_analysis
 
 
 def print_clustering_to_md(df, full_output=False):
@@ -25,15 +25,15 @@ def print_clustering_to_md(df, full_output=False):
             curr_group_df = df.where(df['group'] == elem)
             for i, curr_elem in enumerate(curr_group_df.group.tolist()):
                 print("#### Title: '" + curr_group_df.iloc[i]['title'] + "'\n", file=f)
-                print("```lua\n" + curr_group_df.iloc[i]['sourcecode'] + "\n```'\n", file=f)
+                print("```lua\n" + curr_group_df.iloc[i]['sourcecode'] + "\n```\n", file=f)
 
     print("Printing test results finished")
 
 
-def test_levenshtein_clasterization(user_db_port=None, user=None, password=None):
+def test_levenshtein_clusterization(full_output=False, user_db_port=None, user=None, password=None):
     """
-    Current way of clasterization sometimes might need some "fine tuning",
-    so this function is created to test levenshtein_clasterization() on smaller sizes of input
+    Current way of clusterization sometimes might need some "fine tuning",
+    so this function is created to test levenshtein_clusterization() on smaller sizes of input
     with results, accessible through text files.
     """
     try:
@@ -44,15 +44,15 @@ def test_levenshtein_clasterization(user_db_port=None, user=None, password=None)
         select dbname, title, sourcecode, length
         from Scripts
         order by rand()
-        limit %s
+        limit 
         """
 
         with conn.cursor() as cur:
-            cur.execute(query, str(ANALYSIS_BATCH_SIZE))
+            cur.execute(query + str(ANALYSIS_BATCH_SIZE))
             df = pd.DataFrame(cur, columns=['dbname', 'title', 'sourcecode', 'length'])
 
             res = code_analysis.levenshtein_clasterization(df)
-            print_clustering_to_md(res)
+            print_clustering_to_md(res, full_output)
         utils.db_query.close_conn(conn)
     except Exception as err:
         print("Something went wrong.\n", err)
@@ -100,5 +100,5 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    test_levenshtein_clasterization(args.user_db_port, args.user, args.password)
+    test_levenshtein_clasterization(args.full_output, args.user_db_port, args.user, args.password)
 
