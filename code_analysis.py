@@ -39,7 +39,7 @@ def generate_distance_matrix(df):
     return dam_lev
 
 
-def levenshtein_clasterization(df):
+def levenshtein_clusterization(df):
     dam_lev = generate_distance_matrix(df)
     clustering = DBSCAN(
         eps=constants.ANALYSIS_CLUSTERING_EPS,

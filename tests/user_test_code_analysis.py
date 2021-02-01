@@ -51,7 +51,7 @@ def test_levenshtein_clusterization(full_output=False, user_db_port=None, user=N
             cur.execute(query + str(ANALYSIS_BATCH_SIZE))
             df = pd.DataFrame(cur, columns=['dbname', 'title', 'sourcecode', 'length'])
 
-            res = code_analysis.levenshtein_clasterization(df)
+            res = code_analysis.levenshtein_clusterization(df)
             print_clustering_to_md(res, full_output)
         utils.db_query.close_conn(conn)
     except Exception as err:
@@ -100,5 +100,5 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    test_levenshtein_clasterization(args.full_output, args.user_db_port, args.user, args.password)
+    test_levenshtein_clusterization(args.full_output, args.user_db_port, args.user, args.password)
 
