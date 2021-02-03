@@ -226,7 +226,7 @@ Lua modules are functions that are used in wiki pages using `#invoke`. The wiki 
   <img src="/img/trin_less_1e6.png" width="33%" />
 </p>
 
-![](img/trin_hist.png) ![](img/trin_hist_gr_1e6.png)
+![](img/trin_hist.png) ![](img/trin_hist_normal.png)
 
 <p float="left">
   <img src="/img/norm_trin.png" width="33%" />

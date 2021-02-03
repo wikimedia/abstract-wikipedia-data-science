@@ -506,7 +506,6 @@ def get_most_common_tag_info(
         "        GROUP BY page_id, ctd_name "
         "    ) AS tagcount "
         "    GROUP BY page_id "
-        "    HAVING most_common_tag_count>5 "
         ") AS mosttag "
         "ON mosttag.page_id=tagcount.page_id "
         "AND tagcount.tags=mosttag.most_common_tag_count "
