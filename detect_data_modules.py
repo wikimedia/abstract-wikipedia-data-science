@@ -10,7 +10,6 @@ def detect_data_modules(full_run=False, user_db_port=None, user=None, password=N
         "FROM Scripts "
     )
     new_values_query = "WHERE is_data IS NULL"
-    save_query = "UPDATE Scripts SET is_data=%s WHERE dbname=%s AND page_id=%s "
 
     cols = ["page_id", "dbname", "sourcecode", "is_data"]
     function_name = "detect_data_modules"
@@ -27,12 +26,20 @@ def detect_data_modules(full_run=False, user_db_port=None, user=None, password=N
         user=user,
         password=password
     ):
-        sourcecodes = df.loc[:, 'sourcecodes']
+        sourcecodes = df.loc[:, 'sourcecode']
         for i in range(sourcecodes.shape[0]):
             curr_code = remove_comments(sourcecodes.iat[i])
             df.at[i, 'is_data'] = check_if_data_function(curr_code)
 
-        #save_data(df, db, function_name, user_db_port, user, password)
+        grouped = df.groupby(df["dbname"])
+        for db_name in df["dbname"].unique():
+            save_data(
+                grouped.get_group(db_name),
+                db_name,
+                function_name,
+                user_db_port,
+                user,
+                password)
 
 
 
