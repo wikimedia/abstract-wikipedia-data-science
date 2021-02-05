@@ -1,11 +1,12 @@
 import argparse
 
 from utils.db_query import query_data_generator, save_data, get_dbs
+from utils.sourcecode_processing import remove_comments, check_if_data_function
 
 
 def detect_data_modules(full_run=False, user_db_port=None, user=None, password=None):
     query = (
-        "SELECT page_id, sourcecode"
+        "SELECT page_id, dbname, sourcecode, is_data "
         "FROM Scripts "
     )
     new_values_query = "WHERE is_data IS NULL"
@@ -14,29 +15,24 @@ def detect_data_modules(full_run=False, user_db_port=None, user=None, password=N
     cols = ["page_id", "dbname", "sourcecode", "is_data"]
     function_name = "detect_data_modules"
 
-    if full_run:
-        for df in query_data_generator(
-            query,
-            function_name,
-            cols,
-            replicas=False,
-            user_db_port=user_db_port,
-            user=user,
-            password=password
-        ):
-            print("tick")
-            #save_data(df, db, function_name, user_db_port, user, password)
-    else:
-        for df in query_data_generator(
-            query + new_values_query,
-            function_name,
-            cols,
-            replicas=False,
-            user_db_port=user_db_port,
-            user=user,
-            password=password
-        ):
-            print("tock")
+    if not full_run:
+        query += new_values_query
+
+    for df in query_data_generator(
+        query,
+        function_name,
+        cols,
+        replicas=False,
+        user_db_port=user_db_port,
+        user=user,
+        password=password
+    ):
+        sourcecodes = df.loc[:, 'sourcecodes']
+        for i in range(sourcecodes.shape[0]):
+            curr_code = remove_comments(sourcecodes.iat[i])
+            df.at[i, 'is_data'] = check_if_data_function(curr_code)
+
+        #save_data(df, db, function_name, user_db_port, user, password)
 
 
 
