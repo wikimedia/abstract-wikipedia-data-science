@@ -29,7 +29,7 @@ def check_if_data_function(code):
     @param code: sourcecode of the function (with no comments)
     @return: True/False
     """
-    if re.match(r"^return {[\s\S]*$", code):
+    if re.match(r"^return\s*{[\s\S]*$", code):
         return True
     else:
         return False
