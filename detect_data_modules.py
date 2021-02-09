@@ -32,10 +32,12 @@ def detect_data_modules(full_run=False, user_db_port=None, user=None, password=N
             query,
             function_name,
             cols,
+            db="user_db",
             replicas=False,
             user_db_port=user_db_port,
             user=user,
-            password=password
+            password=password,
+            no_offset=True
     ):
         sourcecodes = df.loc[:, 'sourcecode']
         for i in range(sourcecodes.shape[0]):
