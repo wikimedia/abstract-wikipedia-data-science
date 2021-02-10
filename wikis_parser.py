@@ -1,5 +1,7 @@
 ## imports
 import argparse
+import requests
+from bs4 import BeautifulSoup
 
 import utils.db_access as db_acc
 import constants
@@ -129,6 +131,19 @@ def update_local_db(update_time, user_db_port=None, user=None, password=None):
     except Exception as err:
         print("Something went wrong.\n", err)
         exit(1)
+
+
+def set_shards_to_db(user_db_port=None, user=None, password=None):
+    pass
+
+
+def get_database_shards_info(user_db_port=None, user=None, password=None):
+    for i in range():
+        page = requests.get(constants.NOC_DATABASES_DIRECTORY + "s%d.dblist" % (i + 1))
+        soup = BeautifulSoup(page.text, 'html.parser')          #TODO: catch 404
+        curr_set = soup.string.strip().split("\n")[1:]
+
+
 
 
 def update_checker(replicas_port=None, user_db_port=None, user=None, password=None):
