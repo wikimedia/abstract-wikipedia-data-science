@@ -23,6 +23,6 @@
 
 0 12 * * 6 jsub -N cron-db-gm -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh gm
 
-0 0 * * 7 jsub -N get_dist -once -quiet abstract-wikipedia-data-science/shell_scripts/get_distribution.sh
+0 0 * * 7 jsub -N get_dist -mem 1024m -once -quiet abstract-wikipedia-data-science/shell_scripts/get_distribution.sh
 
 0 3 1 * * jsub -N pgview -once -quiet abstract-wikipedia-data-science/shell_scripts/get_pageviews.sh
