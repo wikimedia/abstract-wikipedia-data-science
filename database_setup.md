@@ -11,6 +11,7 @@ create table Sources(
     dbname varchar(32) not null,
     url text,
     update_time datetime,
+    shard_number tinyint unsigned,
     primary key (dbname)
 );
 
