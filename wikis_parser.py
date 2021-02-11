@@ -134,7 +134,16 @@ def update_local_db(update_time, user_db_port=None, user=None, password=None):
 
 
 def set_shards_number_to_db(curr_shard, wikis, user_db_port=None, user=None, password=None):
+    """
+    Saves number of the shard where this database resides.
 
+    :param curr_shard: Shard number, whose databases we are looking at.
+    :param wikis: List of wikis, stored on this shard.
+    :param user_db_port: Port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
     query = "UPDATE Sources SET shard_number=%s WHERE dbname=%s"
     try:
         conn = db_acc.connect_to_user_database(
@@ -151,6 +160,15 @@ def set_shards_number_to_db(curr_shard, wikis, user_db_port=None, user=None, pas
 
 
 def get_database_shards_info(user_db_port=None, user=None, password=None):
+    """
+    Walks through pages in https://noc.wikimedia.org/conf/ to get, where each database is stored.
+    Currently, all shard pages, storing databases, are named like `s<number>.dblist`
+
+    :param user_db_port: Port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
     for i in range(constants.SHARDS_AMOUNT):
         shard_name = "s%d.dblist" % (i + 1)
         try:
