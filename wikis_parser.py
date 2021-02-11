@@ -191,17 +191,15 @@ def update_checker(replicas_port=None, user_db_port=None, user=None, password=No
     print("Wikiprojects update checker: time of last update fetched from database")
     local_db_update_time = get_last_update_local_db(user_db_port, user, password)
     print("Wikiprojects update checker: local time of last update fetched")
-    if local_db_update_time is not None:
-        if wiki_db_update_time == local_db_update_time:
-            print("Wikiprojects update checker: update not needed")
-            return
-
-    db_info = get_wikipages_from_db(replicas_port, user, password)
-    print("Wikiprojects update checker: wikilinks info fetched from db")
-    save_links_to_db(db_info, user_db_port, user, password)
-    print("Wikiprojects update checker: wikipages links updated in db")
-    update_local_db(wiki_db_update_time, user_db_port, user, password)
-    print("Wikiprojects update checker: updating meta finished")
+    if local_db_update_time is not None and wiki_db_update_time == local_db_update_time:
+        print("Wikiprojects update checker: update not needed")
+    else:
+        db_info = get_wikipages_from_db(replicas_port, user, password)
+        print("Wikiprojects update checker: wikilinks info fetched from db")
+        save_links_to_db(db_info, user_db_port, user, password)
+        print("Wikiprojects update checker: wikipages links updated in db")
+        update_local_db(wiki_db_update_time, user_db_port, user, password)
+        print("Wikiprojects update checker: updating meta finished")
 
     get_database_shards_info(user_db_port, user, password)
     print("Wikiprojects update checker: shards parsing finished")
