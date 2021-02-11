@@ -201,7 +201,10 @@ def update_checker(replicas_port=None, user_db_port=None, user=None, password=No
     save_links_to_db(db_info, user_db_port, user, password)
     print("Wikiprojects update checker: wikipages links updated in db")
     update_local_db(wiki_db_update_time, user_db_port, user, password)
-    print("Wikiprojects update checker: update finished")
+    print("Wikiprojects update checker: updating meta finished")
+
+    get_database_shards_info(user_db_port, user, password)
+    print("Wikiprojects update checker: shards parsing finished")
 
 
 if __name__ == "__main__":
