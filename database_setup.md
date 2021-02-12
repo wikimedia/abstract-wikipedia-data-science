@@ -46,6 +46,8 @@ create table Scripts(
     pageviews int default 0,
     page_is_redirect bool default 0,
     page_is_new bool default 0,
+    cluster int,
+    cluster_wo_data int,
     primary key (page_id, dbname),
     foreign key (dbname) references Sources(dbname)
 );

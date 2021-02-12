@@ -72,7 +72,7 @@ def query_data_generator(
     :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
     :param user: Toolforge username of the tool.
     :param password: Toolforge password of the tool.
-    :param replicas: False if collecting data from toolsdb user database, True is collecting from other wikimedia databases.
+    :param replicas: False if collecting data from toolsdb user database, True if collecting from other wikimedia databases.
     :param row_count: Number of rows to get in one query from the database.
     :return: dataframe
     """
