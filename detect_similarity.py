@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import re
 import argparse
+import random
 from scipy.sparse import vstack
 from sklearn.cluster import DBSCAN
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -11,7 +12,13 @@ import utils.db_access as db_acc
 from constants import DATABASE_NAME
 
 
-def get_data(with_data, user_db_port, user, password, maxlen=20000):
+def get_data(
+    with_data,
+    user_db_port,
+    user,
+    password,
+    maxlen=20000,
+):
     ## First clear cluster and cluster_wo_data columns
 
     query = "SELECT page_id, dbname, LEFT(sourcecode, %s) FROM Scripts" % maxlen
@@ -33,18 +40,20 @@ def get_tfidf(df, ngram=(3, 7)):
     return vectorizer.fit_transform(df["sourcecode"])
 
 
-def get_embedding(df, embedding_size=32, window_size=5, min_word=5, down_sampling=1e-2):
+def get_embedding(
+    df, embedding_size=32, window_size=5, min_word=5, down_sampling=1e-2, limit=15000
+):
     def preprocess_text(document):
         pat = r"(?u)\w\w+|[^\w\s]+"
         return re.findall(pat, document)
 
     list_of_list = []
     for i, code in df["sourcecode"].iteritems():
-        df.loc[i, "sourcecode"] = ""  ## to reduce memory footprint
+        df.at[i, "sourcecode"] = ""  ## to reduce memory footprint
         list_of_list.append(preprocess_text(code))
 
     ft_model = FastText(
-        list_of_list,
+        random.sample(list_of_list, k=limit),
         size=embedding_size,
         window=window_size,
         min_count=min_word,
@@ -52,6 +61,13 @@ def get_embedding(df, embedding_size=32, window_size=5, min_word=5, down_samplin
         sg=1,  ## skip gram
         iter=100,
     )
+
+    import pickle
+
+    with open("fastText_model.pickle", "wb") as fp:
+        pickle.dump(ft_model, fp)
+    # with open("fastText_model.pickle", "rb") as fp:
+    #     ft_model = pickle.load(fp)
 
     list_of_AV = []  ##Average
     for doc in list_of_list:
@@ -84,11 +100,12 @@ def get_similarity(with_data, user_db_port, user, password):
     del df["sourcecode"]
     df, clustering = find_clusters(df, X)
 
-    print(
-        df.iloc[clustering.core_sample_indices_]
-        .groupby("group")
-        .agg({"page_id": "count"})
-    )
+    with pd.option_context("display.max_rows", None, "display.max_columns", None):
+        print(
+            df.iloc[clustering.core_sample_indices_]
+            .groupby("group")
+            .agg({"page_id": "count"})
+        )
 
     ## separate what data to store and what to re-cluster (-1 and 1-2 from each cluster)
 
