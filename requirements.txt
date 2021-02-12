@@ -5,3 +5,4 @@ PyMySQL
 numpy
 scipy
 sklearn
+gensim
