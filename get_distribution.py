@@ -9,6 +9,16 @@ import utils.db_access as db_acc
 
 
 def get_data(feature_names, user_db_port, user, password):
+    """
+    Collects data from Scripts table, columns include feature names and additionally
+    'edits per editor' and 'edits per day' are calculated.
+
+    :param feature_names: List of features whose scores are to be calculated
+    :param user_db_port: Port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: DataFrame
+    """
     cols = copy.deepcopy(feature_names)
 
     if "edits" not in cols:
@@ -45,6 +55,12 @@ def get_data(feature_names, user_db_port, user, password):
 
 
 def normalize(df):
+    """
+    Normalizes columns per wiki for a selected number of features (listed in 'cols' variable).
+
+    :param df: DataFrame whose columns are to be normalized
+    :return: DataFrame
+    """
     cols = [
         "editors",
         "major_edits",
@@ -63,13 +79,32 @@ def normalize(df):
     return df
 
 
-def which_percentile(threshold, d):
+def which_percentile(value, d):
+    """
+    Returns the percentile of 'value' in 'd's distribution.
+
+    :param value: The value whose percentile is required
+    :param d: A pandas.Series or Numpy array which represents the distribution
+    :return: int
+    """
     if len(d) == 0:
         return 0
-    return sum(d < threshold) / len(d)
+    return sum(d < value) / len(d)
 
 
 def get_multipliers(df, threshold=0.87):
+    """
+    Alters distribution of each column in df such that the heuristic values in
+    'limits_num' dictionary is the 'threshold' percentile or less. This ensures
+    higher values of certain features get more priority, and the 99.9% of values
+    (which are very low) are not prioritized too much. This does NOT change original
+    values but simply removes lower values when calculating percentiles.
+
+    :param value: The value whose percentile is required
+    :param d: A pandas.Series or Numpy array which represents the distribution
+    :return: dictionary of heuristic limits, dictionary of multipliers
+    """
+
     # List of determined heuristics
     # So far for options between norm and actual numbers, norms are used
     limits_num = {
@@ -113,6 +148,15 @@ def get_multipliers(df, threshold=0.87):
 
 
 def get_distribution(df, limits_num, limits_perc):
+    """
+    Returns modified dataframe by replacing features with scores.
+    Here scores means 'what percentile is this value in the modified distribution'.
+
+    :param df: The dataframe containing all the features
+    :param limits_num: Dictionary of heuristic limits
+    :param limits_perc: Dictionary of multipliers to alter distribution
+    :return: DataFrame
+    """
     for k in df.columns:
         if k == "page_id" or k == "dbname":
             continue
@@ -137,12 +181,16 @@ def get_score(
     ],
     weights=[1, 1, 0.1, 5, 2, 5, 2, 8],
 ):
+    """
+    Returns dataframe with scores of each module in the 'score' column.
+
+    :param feature_names: Features against whom final score is to be calculated
+    :param weights: The linear weights to give to each feature
+    :return: DataFrame
+    """
 
     if (len(feature_names)) != len(weights):
-        sys.exit(
-            "Number of features is not equal to the number of weights!"
-            "Remember to put two extra weight values at the end for synthetic features."
-        )
+        sys.exit("Number of features is not equal to the number of weights!")
     df = pd.read_csv("data_distribution.csv")
     weights = [w / sum(weights) for w in weights]  ## Normalize weights
     df["score"] = df[feature_names].dot(weights)
@@ -152,7 +200,7 @@ def get_score(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Get modified distribution of features and return what percentile each "
-        "value is in that modified distribution."
+        "value is in that modified distribution as 'scores'."
         "To use from local PC, provide all the additional flags needed for "
         "establishing connection through ssh tunneling."
         "More help available at "
