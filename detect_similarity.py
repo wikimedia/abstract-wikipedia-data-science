@@ -5,14 +5,31 @@ from scipy.sparse import vstack
 from sklearn.cluster import DBSCAN
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from utils.db_query import *
+from utils.db_query import close_conn, encode_if_necessary
 import utils.db_access as db_acc
 from constants import DATABASE_NAME
 
 
-def get_tfidf(df, maxlen=20000, ngram=(3, 7)):
+def get_data(with_data, user_db_port, user, password, maxlen=20000):
+    ## First clear cluster and cluster_wo_data columns
+
+    query = "SELECT page_id, dbname, LEFT(sourcecode, %s) FROM Scripts" % maxlen
+    if not with_data:
+        query += " WHERE is_data=0"
+
+    cols = ["page_id", "dbname", "sourcecode"]
+    conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+    with conn.cursor() as cur:
+        cur.execute(query)
+        df = pd.DataFrame(cur.fetchall(), columns=cols).applymap(encode_if_necessary)
+    close_conn(conn)
+
+    return df
+
+
+def get_tfidf(df, ngram=(3, 7)):
     vectorizer = TfidfVectorizer(ngram_range=ngram, token_pattern=r"(?u)\w\w+|[^\w\s*]")
-    return vectorizer.fit_transform(df["sourcecode"].apply(lambda x: x[:maxlen]).values)
+    return vectorizer.fit_transform(df["sourcecode"])
 
 
 def find_clusters(df, X, eps=0.2, min_samples=2):
@@ -25,35 +42,12 @@ def store_data(df, col):
 
 
 def get_similarity(with_data, user_db_port, user, password):
-    ## First clear cluster and cluster_wo_data columns
-    query = "SELECT page_id, dbname, sourcecode FROM Scripts"
-    if not with_data:
-        query += " WHERE is_data=0"
 
-    df = pd.DataFrame()
-    tfidf_X = None
+    df = get_data(with_data, user_db_port, user, password)
+    X = get_tfidf(df)
+    del df["sourcecode"]
+    df, clustering = find_clusters(df, X)
 
-    for code_df in query_data_generator(
-        query,
-        "get_similarity",
-        ["page_id", "dbname", "sourcecode"],
-        DATABASE_NAME,
-        None,
-        user_db_port,
-        user,
-        password,
-        False,
-        500,
-    ):
-        X = get_tfidf(code_df)
-        tfidf_X = vstack((tfidf_X, X))
-
-        del code_df["sourcecode"]
-        df = df.append(code_df, ignore_index=True)
-        del code_df
-        del X
-
-    df, clustering = find_clusters(df, tfidf_X)
     print(
         df.iloc[clustering.core_sample_indices_]
         .groupby("group")
