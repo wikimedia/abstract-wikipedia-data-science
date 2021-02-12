@@ -6,8 +6,8 @@ import random
 from scipy.sparse import vstack
 from sklearn.cluster import DBSCAN
 from sklearn.feature_extraction.text import TfidfVectorizer
-from gensim.models.fasttext import FastText
-from utils.db_query import close_conn, encode_if_necessary
+from gensim.models.fasttext import FastText, load_facebook_vectors, save_facebook_model
+from utils.db_query import *
 import utils.db_access as db_acc
 from constants import DATABASE_NAME
 
@@ -40,45 +40,75 @@ def get_tfidf(df, ngram=(3, 7)):
     return vectorizer.fit_transform(df["sourcecode"])
 
 
-def get_embedding(
-    df, embedding_size=32, window_size=5, min_word=5, down_sampling=1e-2, limit=15000
-):
-    def preprocess_text(document):
-        pat = r"(?u)\w\w+|[^\w\s]+"
-        return re.findall(pat, document)
+def preprocess_text(document):
+    pat = r"(?u)\w\w+|[^\w\s]+"
+    return re.findall(pat, document)
 
-    list_of_list = []
-    for i, code in df["sourcecode"].iteritems():
-        df.at[i, "sourcecode"] = ""  ## to reduce memory footprint
-        list_of_list.append(preprocess_text(code))
+
+def train_embedding(
+    with_data,
+    user_db_port,
+    user,
+    password,
+    limit=10000,
+    maxlen=20000,
+    embedding_size=32,
+):
 
     ft_model = FastText(
-        random.sample(list_of_list, k=limit),
         size=embedding_size,
-        window=window_size,
-        min_count=min_word,
-        sample=down_sampling,
-        sg=1,  ## skip gram
-        iter=100,
+        window=5,
+        min_count=5,
+        max_vocab_size=60000,
+        sg=1,
     )
 
-    import pickle
+    query = "SELECT page_id, dbname, LEFT(sourcecode, %s) FROM Scripts" % maxlen
+    if not with_data:
+        query += " WHERE is_data=0"
 
-    with open("fastText_model.pickle", "wb") as fp:
-        pickle.dump(ft_model, fp)
-    # with open("fastText_model.pickle", "rb") as fp:
-    #     ft_model = pickle.load(fp)
+    cols = ["page_id", "dbname", "sourcecode"]
+    first_iter = True
+    for df in query_data_generator(
+        query,
+        "detect_similarity",
+        cols,
+        DATABASE_NAME,
+        None,
+        user_db_port,
+        user,
+        password,
+        False,
+        limit,
+    ):
 
-    list_of_AV = []  ##Average
-    for doc in list_of_list:
+        list_of_list = []
+        for i, code in df["sourcecode"].iteritems():
+            list_of_list.append(preprocess_text(code))
+
+        ft_model.build_vocab(sentences=list_of_list, update=(not first_iter))
+        ft_model.train(
+            sentences=list_of_list, total_examples=len(list_of_list), epochs=100
+        )
+        first_iter = False
+
+    save_facebook_model(ft_model, "fasttext.model")
+
+
+def get_embedding(df, embedding_size=32):
+
+    ft_model = load_facebook_vectors("fasttext.model")
+
+    list_of_AV = []
+
+    for code in df["sourcecode"]:
+        code = preprocess_text(code)
         AV = np.zeros(embedding_size)
-        for word in doc:
+        for word in code:
             emb = ft_model.wv[word]
             AV += emb
         AV /= len(AV)
         list_of_AV.append(AV)
-
-    del list_of_list
 
     return np.array(list_of_AV)
 
@@ -93,6 +123,8 @@ def store_data(df, col):
 
 
 def get_similarity(with_data, user_db_port, user, password):
+
+    train_embedding(with_data, user_db_port, user, password)
 
     df = get_data(with_data, user_db_port, user, password)
     # X = get_tfidf(df)
