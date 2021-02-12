@@ -60,6 +60,7 @@ def query_data_generator(
     password=None,
     replicas=True,
     row_count=500,
+    no_offset=False
 ):
     """
     Query database (db) and return outputs in chunks.
@@ -74,6 +75,7 @@ def query_data_generator(
     :param password: Toolforge password of the tool.
     :param replicas: False if collecting data from toolsdb user database, True is collecting from other wikimedia databases.
     :param row_count: Number of rows to get in one query from the database.
+    :param no_offset: Disables offset for requests, which contents change while iterating.
     :return: dataframe
     """
 
@@ -114,8 +116,8 @@ def query_data_generator(
                     )
                     retry_counter += 1
                     time.sleep(60)
-
-            offset += row_count
+            if not no_offset:
+                offset += row_count
             if len(df) == 0:
                 return
             yield df
