@@ -1,6 +1,8 @@
 import pymysql
 import toolforge
 
+import constants
+
 
 def connect_to_user_database(db_name, user_db_port=None, user=None, password=None):
     """
@@ -33,6 +35,35 @@ def connect_to_user_database(db_name, user_db_port=None, user=None, password=Non
         exit(1)
 
 
+def get_shard_number(db_name, user_db_port=None, user=None, password=None):
+    """
+    Retrieves shard number, where database is stored, by connecting to Sources in user's database.
+
+    :param db_name: name of the database, whose shard is requested.
+    :param user_db_port: port for connecting to db through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password pf the tool.
+    :return: int, shard number for current database.
+    """
+    if db_name[-2:] == "_p":
+        db_name = db_name[:-2]
+
+    query = "SELECT shard_number FROM Sources WHERE dbname LIKE %s"
+
+    try:
+        conn = connect_to_user_database(
+            constants.DATABASE_NAME, user_db_port, user, password
+        )
+        with conn.cursor() as cur:
+            cur.execute(query, db_name)
+            shard_num = cur.fetchone()[0]
+        conn.close()
+        return shard_num
+    except Exception as err:
+        print("Something went wrong.\n", err)
+        exit(1)
+
+
 def connect_to_replicas_database(db_name, replicas_port=None, user=None, password=None):
     """
     Establishes connection to Wikimedia replicas database in Toolforge.
@@ -42,6 +73,7 @@ def connect_to_replicas_database(db_name, replicas_port=None, user=None, passwor
     :param password: Toolforge password pf the tool
     :return: pymysql.connection to the database
     """
+    # get shard for that db
     try:
         if replicas_port:
             conn = pymysql.connect(
