@@ -45,7 +45,7 @@ def preprocess_text(document):
     return re.findall(pat, document)
 
 
-def train_embedding(
+def train_fasttext_embedding(
     with_data,
     user_db_port,
     user,
@@ -88,16 +88,16 @@ def train_embedding(
 
         ft_model.build_vocab(sentences=list_of_list, update=(not first_iter))
         ft_model.train(
-            sentences=list_of_list, total_examples=len(list_of_list), epochs=100
+            sentences=list_of_list, total_examples=len(list_of_list), epochs=10
         )
         first_iter = False
 
-    save_facebook_model(ft_model, "fasttext.model")
+    ft_model.save("fasttext.model")
 
 
 def get_embedding(df, embedding_size=32):
 
-    ft_model = load_facebook_vectors("fasttext.model")
+    ft_model = FastText.load("fasttext.model")
 
     list_of_AV = []
 
@@ -124,7 +124,7 @@ def store_data(df, col):
 
 def get_similarity(with_data, user_db_port, user, password):
 
-    train_embedding(with_data, user_db_port, user, password)
+    train_fasttext_embedding(with_data, user_db_port, user, password)
 
     df = get_data(with_data, user_db_port, user, password)
     # X = get_tfidf(df)
