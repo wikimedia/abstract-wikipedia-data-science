@@ -6,7 +6,8 @@ import random
 from scipy.sparse import vstack
 from sklearn.cluster import DBSCAN
 from sklearn.feature_extraction.text import TfidfVectorizer
-from gensim.models.fasttext import FastText, load_facebook_vectors, save_facebook_model
+from gensim.models.fasttext import FastText
+from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from utils.db_query import *
 import utils.db_access as db_acc
 from constants import DATABASE_NAME
@@ -45,7 +46,7 @@ def preprocess_text(document):
     return re.findall(pat, document)
 
 
-def train_fasttext_embedding(
+def train_embedding(
     with_data,
     user_db_port,
     user,
@@ -53,15 +54,23 @@ def train_fasttext_embedding(
     limit=10000,
     maxlen=20000,
     embedding_size=32,
+    is_word=True,
 ):
-
-    ft_model = FastText(
-        size=embedding_size,
-        window=5,
-        min_count=5,
-        max_vocab_size=60000,
-        sg=1,
-    )
+    if is_word:
+        model = FastText(
+            size=embedding_size,
+            window=5,
+            min_count=5,
+            max_vocab_size=60000,
+            sg=1,
+        )
+    else:
+        model = Doc2Vec(
+            vector_size=embedding_size,
+            window=5,
+            min_count=5,
+            max_vocab_size=60000,
+        )
 
     query = "SELECT page_id, dbname, LEFT(sourcecode, %s) FROM Scripts" % maxlen
     if not with_data:
@@ -84,33 +93,53 @@ def train_fasttext_embedding(
 
         list_of_list = []
         for i, code in df["sourcecode"].iteritems():
-            list_of_list.append(preprocess_text(code))
+            if is_word:
+                list_of_list.append(preprocess_text(code))
+            else:
+                list_of_list.append(TaggedDocument(preprocess_text(code), [i]))
 
-        ft_model.build_vocab(sentences=list_of_list, update=(not first_iter))
-        ft_model.train(
-            sentences=list_of_list, total_examples=len(list_of_list), epochs=10
-        )
+        if is_word:
+            model.build_vocab(sentences=list_of_list, update=(not first_iter))
+            model.train(
+                sentences=list_of_list, total_examples=len(list_of_list), epochs=10
+            )
+        else:
+            model.build_vocab(documents=list_of_list, update=(not first_iter))
+            model.train(
+                documents=list_of_list, total_examples=len(list_of_list), epochs=10
+            )
+
         first_iter = False
 
-    ft_model.save("fasttext.model")
+    if is_word:
+        model.save("fasttext.model")
+    else:
+        model.save("doc2vec.model")
 
 
-def get_embedding(df, embedding_size=32):
+def get_embedding(df, is_word=True):
 
-    ft_model = FastText.load("fasttext.model")
+    if is_word:
+        model = FastText.load("fasttext.model")
+    else:
+        model = Doc2Vec.load("doc2vec.model")
 
-    list_of_AV = []
+    def get_emb(sent):
+        if is_word:
+            AV = np.zeros(model.vector_size)
+            for word in sent:
+                AV += model.wv[word]
+            AV /= len(AV)
+            return AV
+        else:
+            return model.infer_vector(sent)
+
+    list_of_embeddings = []
 
     for code in df["sourcecode"]:
-        code = preprocess_text(code)
-        AV = np.zeros(embedding_size)
-        for word in code:
-            emb = ft_model.wv[word]
-            AV += emb
-        AV /= len(AV)
-        list_of_AV.append(AV)
+        list_of_embeddings.append(get_emb(preprocess_text(code)))
 
-    return np.array(list_of_AV)
+    return np.array(list_of_embeddings)
 
 
 def find_clusters(df, X, eps=0.2, min_samples=2):
@@ -124,11 +153,11 @@ def store_data(df, col):
 
 def get_similarity(with_data, user_db_port, user, password):
 
-    train_fasttext_embedding(with_data, user_db_port, user, password)
+    train_embedding(with_data, user_db_port, user, password, is_word=False)
 
     df = get_data(with_data, user_db_port, user, password)
     # X = get_tfidf(df)
-    X = get_embedding(df)
+    X = get_embedding(df, is_word=False)
     del df["sourcecode"]
     df, clustering = find_clusters(df, X)
 

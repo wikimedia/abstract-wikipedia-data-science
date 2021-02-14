@@ -25,4 +25,7 @@
 
 0 0 * * 7 jsub -N get_dist -mem 1024m -once -quiet abstract-wikipedia-data-science/shell_scripts/get_distribution.sh
 
+0 1 * * 7 jsub -N similarity -mem 5000m -once -quiet abstract-wikipedia-data-science/shell_scripts/detect_similarity.sh d
+0 1 * * 8 jsub -N similarity -mem 5000m -once -quiet abstract-wikipedia-data-science/shell_scripts/detect_similarity.sh
+
 0 3 1 * * jsub -N pgview -once -quiet abstract-wikipedia-data-science/shell_scripts/get_pageviews.sh
