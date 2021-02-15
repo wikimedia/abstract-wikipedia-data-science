@@ -102,8 +102,8 @@ def get_multipliers(df, threshold=0.87):
     (which are very low) are not prioritized too much. This does NOT change original
     values but simply removes lower values when calculating percentiles.
 
-    :param value: The value whose percentile is required
-    :param d: A pandas.Series or Numpy array which represents the distribution
+    :param df: Dataframe of features whose multipliers are to be calculated
+    :param threshold: The percentile below which the limits should be in the modified distribution
     :return: dictionary of heuristic limits, dictionary of multipliers
     """
 
