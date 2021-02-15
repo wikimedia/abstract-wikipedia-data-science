@@ -25,4 +25,7 @@
 
 0 0 * * 7 jsub -N get_dist -mem 1024m -once -quiet abstract-wikipedia-data-science/shell_scripts/get_distribution.sh
 
+0 0 * * 0 jsub -N cron-is-data-full -once -quiet abstract-wikipedia-data-science/shell_scripts/detect_data_modules.sh f
+0 5 * * * jsub -N cron-is-data -once -quiet abstract-wikipedia-data-science/shell_scripts/detect_data_modules.sh
+
 0 3 1 * * jsub -N pgview -once -quiet abstract-wikipedia-data-science/shell_scripts/get_pageviews.sh
