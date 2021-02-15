@@ -4,7 +4,7 @@ import re
 import argparse
 import random
 from scipy.sparse import vstack
-from sklearn.cluster import DBSCAN, KMeans
+from sklearn.cluster import DBSCAN, KMeans, OPTICS
 from sklearn.feature_extraction.text import TfidfVectorizer
 from gensim.models.fasttext import FastText
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
@@ -143,7 +143,16 @@ def get_embedding(df, is_word=True):
 
 
 def find_clusters(df, X, eps=0.2, min_samples=2):
-    clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(X)
+    # clustering = DBSCAN(eps=eps, min_samples=min_samples, algorithm="kd_tree").fit(X)
+    clustering = OPTICS(
+        max_eps=np.inf,
+        min_samples=5,
+        metric="minkowski",
+        algorithm="auto",
+        cluster_method="xi",
+        n_jobs=-1,
+    ).fit(X)
+    ##try cosine and dbscan, algorithm=kd_tree
     # clustering = KMeans(n_clusters=100).fit(X)
     return df.assign(group=clustering.labels_), clustering
 
@@ -160,19 +169,9 @@ def get_similarity(with_data, user_db_port, user, password):
     # X = get_tfidf(df)
     X = get_embedding(df, is_word=False)
     del df["sourcecode"]
-
-    for eps in np.arange(0.3, 1, 0.1):
-        print("=" * 50)
-        print("eps =", eps)
-        print("=" * 50)
-        df, clustering = find_clusters(df, X)
-
-        with pd.option_context("display.max_rows", None, "display.max_columns", None):
-            print(
-                df.iloc[clustering.core_sample_indices_]
-                .groupby("group")
-                .agg({"page_id": "count"})
-            )
+    df, clustering = find_clusters(df, X)
+    with pd.option_context("display.max_rows", None, "display.max_columns", None):
+        print(df.groupby("group").agg({"page_id": "count"}))
 
     ## separate what data to store and what to re-cluster (-1 and 1-2 from each cluster)
 
