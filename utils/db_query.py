@@ -80,7 +80,6 @@ def query_data_generator(
     """
 
     offset = 0
-    row_count = row_count
     max_tries = 3
 
     while True:

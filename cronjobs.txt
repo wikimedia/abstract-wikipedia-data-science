@@ -16,10 +16,14 @@
 0 2 * * 6 jsub -N cron-db-1 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh get_pagelinks_info get_langlinks_info get_categories_info get_edit_protection_info get_move_protection_info get_most_common_tag_info
 0 2 * * 6 jsub -N cron-db-2 -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh get_transclusions_info
 0 2 * * 6 jsub -N cron-db-rev -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh get_revision_info
+## This takes ~8 hours
 0 2 * * 6 jsub -N cron-db-tl -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh get_templatelinks_info
-0 2 * * 6 jsub -N cron-db-iwl -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh get_iwlinks_info
+## This takes too long, not used, don't run
+## 0 2 * * 6 jsub -N cron-db-iwl -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh get_iwlinks_info
 
-0 0 * * 7 jsub -N cron-db-gm -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh gm
+0 12 * * 6 jsub -N cron-db-gm -once -quiet abstract-wikipedia-data-science/shell_scripts/fetch_db_info.sh gm
+
+0 0 * * 7 jsub -N get_dist -mem 1024m -once -quiet abstract-wikipedia-data-science/shell_scripts/get_distribution.sh
 
 0 0 * * 0 jsub -N cron-is-data-full -once -quiet abstract-wikipedia-data-science/shell_scripts/detect_data_modules.sh f
 0 5 * * * jsub -N cron-is-data -once -quiet abstract-wikipedia-data-science/shell_scripts/detect_data_modules.sh

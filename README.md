@@ -61,8 +61,9 @@ The order to run the scripts is:
    - remove_missed.py
 
 4. fetch_db_info.sh
-5. detect_data_modules.sh
-6. get_pageviews.sh
+5. get_distribution.sh
+6. detect_data_modules.sh
+7. get_pageviews.sh
 
 As running some scripts require quite a lot of time and computations, when in Toolforge environment,
 it is recommended to use [jsub](https://wikitech.wikimedia.org/wiki/Help:Toolforge/Grid#Submitting_simple_one-off_jobs_using_'jsub').
@@ -102,12 +103,15 @@ We run these scripts as cronjobs. A list of all jobs set up for cron can be foun
 
    Collect statistical data about the pages from various database tables. For example number of edits, number of editors, pages module is transcluded in etc.
 
-7. detect_data_modules.py
+7. get_distribution.py
+
+   Calculates scores for given features and stores them as a csv file for future use.
+
+8. detect_data_modules.py
 
    Tries to detect so-called "data functions" - functions, which are used only for storing data, without any processing - using regular expressions on their sourcecodes; the results are saved into the database `is_data` field. Current implementation _does not_ promise that all the data functions are marked as such, but it does sort out most of the cases.
 
-
-8. get_pageviews.py
+9. get_pageviews.py
 
    Fetch and sum pageviews of all pages that transclude a module, for all modules.
 
