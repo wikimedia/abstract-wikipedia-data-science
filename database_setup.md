@@ -48,6 +48,7 @@ create table Scripts(
     page_is_new bool default 0,
     cluster int,
     cluster_wo_data int,
+    is_data bool default NULL,
     primary key (page_id, dbname),
     foreign key (dbname) references Sources(dbname)
 );

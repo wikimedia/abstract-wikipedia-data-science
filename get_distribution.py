@@ -10,8 +10,8 @@ import utils.db_access as db_acc
 
 def get_data(feature_names, user_db_port, user, password):
     """
-    Collects data from Scripts table, columns include feature names and additionally
-    'edits per editor' and 'edits per day' are calculated.
+    Collects data from Scripts table, columns include column names in feature names
+    and additionally 'edits per editor' and 'edits per day' are calculated.
 
     :param feature_names: List of features whose scores are to be calculated
     :param user_db_port: Port for connecting to local Sources table through ssh tunneling, if used.
@@ -42,16 +42,18 @@ def get_data(feature_names, user_db_port, user, password):
         ).applymap(encode_if_necessary)
     close_conn(conn)
 
-    df["c_frq"] = (df["edits"] / df["editors"]).replace(np.inf, 0)
+    df["edits_per_editor"] = (df["edits"] / df["editors"]).replace(np.inf, 0)
     time_range = (df["last_edit"] - df["first_edit"]).apply(
         lambda x: x.days + x.seconds / (24 * 60 * 60)
     )
-    df["t_frq"] = (df["edits"] / time_range).replace(np.inf, 0)
+    df["edits_per_day"] = (df["edits"] / time_range).replace(np.inf, 0)
 
     if "major_edits" in feature_names:
         df["major_edits"] = df["edits"] - df["minor_edits"]
 
-    return df[["page_id", "dbname", "c_frq", "t_frq"] + feature_names]
+    return df[
+        ["page_id", "dbname", "edits_per_editor", "edits_per_day"] + feature_names
+    ]
 
 
 def normalize(df):
@@ -100,16 +102,16 @@ def get_multipliers(df, threshold=0.87):
     (which are very low) are not prioritized too much. This does NOT change original
     values but simply removes lower values when calculating percentiles.
 
-    :param value: The value whose percentile is required
-    :param d: A pandas.Series or Numpy array which represents the distribution
+    :param df: Dataframe of features whose multipliers are to be calculated
+    :param threshold: The percentile below which the limits should be in the modified distribution
     :return: dictionary of heuristic limits, dictionary of multipliers
     """
 
     # List of determined heuristics
     # So far for options between norm and actual numbers, norms are used
     limits_num = {
-        "c_frq": 200,
-        "t_frq": 6000,
+        "edits_per_editor": 200,
+        "edits_per_day": 6000,
         "editors": 20,
         "editors_norm": 5,
         "edits": 300,
@@ -149,8 +151,8 @@ def get_multipliers(df, threshold=0.87):
 
 def get_distribution(df, limits_num, limits_perc):
     """
-    Returns modified dataframe by replacing features with scores.
-    Here scores means 'what percentile is this value in the modified distribution'.
+    Returns modified dataframe by replacing features with respective scores.
+    Here scores means 'what percentile is this value in the modified distribution?'.
 
     :param df: The dataframe containing all the features
     :param limits_num: Dictionary of heuristic limits
@@ -170,8 +172,8 @@ def get_distribution(df, limits_num, limits_perc):
 
 def get_score(
     feature_names=[
-        "c_frq_score",
-        "t_frq_score",
+        "edits_per_editor_score",
+        "edits_per_day_score",
         "length_score",
         "langs_score",
         "editors_norm_score",
@@ -199,8 +201,7 @@ def get_score(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Get modified distribution of features and return what percentile each "
-        "value is in that modified distribution as 'scores'."
+        description="Calculate scores for each feature and save scores as csv file."
         "To use from local PC, provide all the additional flags needed for "
         "establishing connection through ssh tunneling."
         "More help available at "
