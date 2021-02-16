@@ -3,6 +3,7 @@ import argparse
 import mwapi
 import requests
 import os
+import gzip
 from urllib.parse import quote_plus
 from datetime import datetime, timedelta
 
@@ -12,15 +13,6 @@ from constants import DATABASE_NAME
 ## Global mapping of pages and their pageviews
 ## Populated when source = "dumps"
 dumps = {}
-# tr Atomwaffen_Division 1 0
-# tr Oliver_Cromwell 1 0
-# tr Samwise_Gamgee 1 0
-# tr Thomas_Cromwell 1 0
-# uk Amway 1 0
-# wa Imådje:Samwinne_Måmdey_reclames_fiesses.jpg 1 0
-# www.w Extension_talk:PChart4mwaction=editsection=21action=info 1 0
-# www.w Extension_talk:PChart4mwprintable=yesaction=info 1 0
-# www.w Template:Main_page/mwl 2 0
 
 
 def read_dump_file(filepath):
@@ -40,7 +32,10 @@ def read_dump_file(filepath):
         "wd": "wikidatawiki",
     }
     for filename in os.listdir(filepath):
-        with open(filename, "r") as file:
+        if filename.split("-")[0] != "pageviews":
+            continue
+        filename = os.path.join(filepath, filename)
+        with gzip.open(filename, "rt") as file:
             for line in file:
                 source, title, pageview, _ = line.split()
 
@@ -67,20 +62,19 @@ def load_dumps(all):
             if not year.isnumeric():
                 continue
 
-            year_path = os.listdir(os.path.join(filename, year))
+            year_path = os.listdir(os.path.join(dirpath, year))
             for month in year_path:
-                month_path = os.path.join(filename, month)
-                for file in os.listdir(month_path):
-                    filepath = os.path.join(filename, file)
+                month_path = os.path.join(year_path, month)
+                for filename in os.listdir(month_path):
+                    filepath = os.path.join(month_path, filename)
                     read_dump_file(filepath)
     else:
         ## The 'year' of last month
         date = datetime.now() - timedelta(30)
         date = datetime(date.year, date.month, 1).strftime("%Y%m%d")
 
-        year = str(date.year)
-        month = str(date.month)
-        month = month if len(month) == 2 else "0" + month
+        year = date[:4]
+        month = date[4:6]
         month = year + "-" + month
 
         filepath = os.path.join(dirpath, year, month)
