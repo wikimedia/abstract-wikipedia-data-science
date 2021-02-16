@@ -2,11 +2,89 @@ import pandas as pd
 import argparse
 import mwapi
 import requests
+import os
 from urllib.parse import quote_plus
 from datetime import datetime, timedelta
 
 import utils.db_access as db_acc
 from constants import DATABASE_NAME
+
+## Global mapping of pages and their pageviews
+## Populated when source = "dumps"
+dumps = {}
+# tr Atomwaffen_Division 1 0
+# tr Oliver_Cromwell 1 0
+# tr Samwise_Gamgee 1 0
+# tr Thomas_Cromwell 1 0
+# uk Amway 1 0
+# wa Imådje:Samwinne_Måmdey_reclames_fiesses.jpg 1 0
+# www.w Extension_talk:PChart4mwaction=editsection=21action=info 1 0
+# www.w Extension_talk:PChart4mwprintable=yesaction=info 1 0
+# www.w Template:Main_page/mwl 2 0
+
+
+def read_dump_file(filepath):
+    ## See abbreviation schema in
+    ## https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Traffic/Pageviews
+
+    get_abbr_map = {
+        "b": "wikibooks",
+        "d": "wiktionary",
+        "f": "foundationwiki",
+        "n": "wikinews",
+        "q": "wikiquote",
+        "s": "wikisource",
+        "v": "wikiversity",
+        "voy": "wikivoyage",
+        "w": "mediawikiwiki",
+        "wd": "wikidatawiki",
+    }
+    for filename in os.listdir(filepath):
+        with open(filename, "r") as file:
+            for line in file:
+                source, title, pageview, _ = line.split()
+
+                source = source.split(".")
+                if len(source) == 3:
+                    del source[1]  # mentions .m (mobile device) or .zero
+                if len(source) == 1 or source[1] == "m":
+                    # en or en.m or commons.m
+                    dbname = source[0] + "wiki"
+                else:
+                    dbname = source[0] + get_abbr_map[source[1]]
+
+                key = (dbname, title)
+                if key in dumps.keys():
+                    dumps[key] += pageview
+                else:
+                    dumps[key] = pageview
+
+
+def load_dumps(all):
+    dirpath = "/public/dumps/public/other/pageviews"
+    if all:
+        for year in os.listdir(dirpath):
+            if not year.isnumeric():
+                continue
+
+            year_path = os.listdir(os.path.join(filename, year))
+            for month in year_path:
+                month_path = os.path.join(filename, month)
+                for file in os.listdir(month_path):
+                    filepath = os.path.join(filename, file)
+                    read_dump_file(filepath)
+    else:
+        ## The 'year' of last month
+        date = datetime.now() - timedelta(30)
+        date = datetime(date.year, date.month, 1).strftime("%Y%m%d")
+
+        year = str(date.year)
+        month = str(date.month)
+        month = month if len(month) == 2 else "0" + month
+        month = year + "-" + month
+
+        filepath = os.path.join(dirpath, year, month)
+        read_dump_file(filepath)
 
 
 def get_pageviews_rest_api(title, wiki, all):
@@ -252,7 +330,7 @@ def get_title(dbname, page_id, replicas_port, user, password):
         exit(1)
 
 
-def get_all_pageviews(replicas_port, user_db_port, user, password, all, rest_api):
+def get_all_pageviews(replicas_port, user_db_port, user, password, all, source):
     """
     Get pageviews for all pages which transclude modules and save them.
 
@@ -262,12 +340,12 @@ def get_all_pageviews(replicas_port, user_db_port, user, password, all, rest_api
     :param password: Toolforge password of the tool.
     :param all: Set True to fetch all page views till yesterday. Else fetches pageviews only for"
     "           last month.
-    :param rest_api: If True, uses the REST API, else uses the PHP API.
+    :param source: Either php, rest or dumps. Identifies where to collect the pageviews data from.
     :return: None
     """
 
     db_map = get_mapping(user_db_port, user, password)
-    days = 60 if all else 30
+    days = 60 if all else 30  # for php API only
 
     for (dbname, module_page_id) in get_modules(user_db_port, user, password):
         try:
@@ -282,12 +360,16 @@ def get_all_pageviews(replicas_port, user_db_port, user, password, all, rest_api
             for page_id in get_transclusions(
                 dbname, title, replicas_port, user, password
             ):
-                if rest_api:
-                    pageviews += get_pageviews_rest_api(
-                        get_title(dbname, page_id, replicas_port, user, password),
-                        wiki,
-                        all,
+                if source == "rest":
+                    page_title = get_title(
+                        dbname, page_id, replicas_port, user, password
                     )
+                    pageviews += get_pageviews_rest_api(page_title, wiki, all)
+                elif source == "dumps":
+                    page_title = get_title(
+                        dbname, page_id, replicas_port, user, password
+                    )
+                    pageviews += dumps[(dbname, page_title)]
                 else:
                     pageviews += get_pageviews(page_id, wiki, days)
 
@@ -304,7 +386,7 @@ def get_all_pageviews(replicas_port, user_db_port, user, password, all, rest_api
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Gets pageview information with API and saves in Scripts database."
+        description="Gets pageview information with API or from dumps and saves in Scripts database."
         "To use from local PC, provide all the additional flags needed for "
         "establishing connection through ssh tunneling."
         "More help available at "
@@ -314,9 +396,18 @@ if __name__ == "__main__":
         "--use-rest",
         "-rest",
         action="store_true",
-        help="Whether to use REST API. Uses PHP API if not set. "
+        help="Whether to use REST API. Uses PHP API if -dump is also not set. "
         "REST API collects pageviews since July, 2015 whereas PHP API gets data for the last 60 days only. "
         "To collect monthly data, both work the same (although values differ due to internal API caching)",
+    )
+    parser.add_argument(
+        "--use-dumps",
+        "-dumps",
+        action="store_true",
+        help="Whether to collect data from the pageviews dumps. Uses PHP API if -rest is also not set. "
+        "Can only be set if being used from toolforge as it needs access to dump files. "
+        "Only one of -rest or -dump can be set at a time, if any at all. "
+        "Colects pageviews since May, 2015 if -d is set, else for the last month.",
     )
     parser.add_argument(
         "--all-days",
@@ -354,11 +445,21 @@ if __name__ == "__main__":
         help="Toolforge password of the tool.",
     )
     args = parser.parse_args()
+
+    source = "php"
+    if args.use_rest and args.use_dumps:
+        exit("Both -dump and -rest cannot be set, please choose only one.")
+    elif args.use_rest:
+        source = "rest"
+    elif args.use_dumps:
+        source = "dumps"
+        load_dumps(args.all_days)
+
     get_all_pageviews(
         args.replicas_port,
         args.user_db_port,
         args.user,
         args.password,
         args.all_days,
-        args.use_rest,
+        source,
     )
