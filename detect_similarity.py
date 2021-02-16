@@ -2,10 +2,7 @@ import pandas as pd
 import numpy as np
 import re
 import argparse
-import random
-from scipy.sparse import vstack
-from sklearn.cluster import DBSCAN, KMeans, OPTICS
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import OPTICS
 from gensim.models.fasttext import FastText
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from utils.db_query import *
@@ -20,7 +17,6 @@ def get_data(
     password,
     maxlen=20000,
 ):
-    ## First clear cluster and cluster_wo_data columns
 
     query = "SELECT page_id, dbname, LEFT(sourcecode, %s) FROM Scripts" % maxlen
     if not with_data:
@@ -36,11 +32,6 @@ def get_data(
     return df
 
 
-def get_tfidf(df, ngram=(3, 7)):
-    vectorizer = TfidfVectorizer(ngram_range=ngram, token_pattern=r"(?u)\w\w+|[^\w\s*]")
-    return vectorizer.fit_transform(df["sourcecode"])
-
-
 def preprocess_text(document):
     pat = r"(?u)\w\w+|[^\w\s]+"
     return re.findall(pat, document)
@@ -48,13 +39,13 @@ def preprocess_text(document):
 
 def train_embedding(
     with_data,
+    is_word,
     user_db_port,
     user,
     password,
     limit=10000,
     maxlen=20000,
     embedding_size=32,
-    is_word=True,
 ):
     if is_word:
         model = FastText(
@@ -62,7 +53,7 @@ def train_embedding(
             window=5,
             min_count=5,
             max_vocab_size=60000,
-            sg=1,
+            sg=1,  # skip-gram
         )
     else:
         model = Doc2Vec(
@@ -117,7 +108,7 @@ def train_embedding(
         model.save("doc2vec.model")
 
 
-def get_embedding(df, is_word=True):
+def get_embedding(df, is_word):
 
     if is_word:
         model = FastText.load("fasttext.model")
@@ -142,8 +133,7 @@ def get_embedding(df, is_word=True):
     return np.array(list_of_embeddings)
 
 
-def find_clusters(df, X, eps=0.2, min_samples=2):
-    # clustering = DBSCAN(eps=eps, min_samples=min_samples, algorithm="kd_tree").fit(X)
+def find_clusters(df, X):
     clustering = OPTICS(
         max_eps=np.inf,
         min_samples=5,
@@ -152,31 +142,57 @@ def find_clusters(df, X, eps=0.2, min_samples=2):
         cluster_method="xi",
         n_jobs=-1,
     ).fit(X)
-    ##try cosine and dbscan, algorithm=kd_tree
-    # clustering = KMeans(n_clusters=100).fit(X)
     return df.assign(group=clustering.labels_), clustering
 
 
-def store_data(df, col):
-    pass
+def store_data(df, col, user_db_port, user, password):
+
+    query1 = "UPDATE Scripts SET " + col + "=NULL"
+    query2 = "UPDATE Scripts SET " + col + "=%s WHERE page_id=%s AND dbname=%s"
+    max_tries = 3
+    retry_counter = 1
+
+    while True:
+        try:
+            ## Need to keep query1 and query2 in the same transaction
+            conn = db_acc.connect_to_user_database(
+                DATABASE_NAME, user_db_port, user, password
+            )
+            with conn.cursor() as cur:
+                cur.execute(query1)
+                for _, elem in df.iterrows():
+                    cur.execute(
+                        query2, [elem["group"], elem["page_id"], elem["dbname"]]
+                    )
+            conn.commit()
+            close_conn(conn)
+            break
+        except (pymysql.err.DatabaseError, pymysql.err.OperationalError) as err:
+            close_conn(conn)
+            if retry_counter == max_tries:
+                raise Exception(err)
+            print("Retrying saving clusters in 1 minute...")
+            retry_counter += 1
+            time.sleep(6)
+        except Exception as err:
+            print("Something went wrong. Error saving clusters \n", repr(err))
+            break
 
 
-def get_similarity(with_data, user_db_port, user, password):
+def get_similarity(
+    with_data, train_model, word_embedding, user_db_port, user, password
+):
 
-    # train_embedding(with_data, user_db_port, user, password, is_word=False)
+    if train_model:
+        train_embedding(with_data, word_embedding, user_db_port, user, password)
 
     df = get_data(with_data, user_db_port, user, password)
-    # X = get_tfidf(df)
-    X = get_embedding(df, is_word=False)
+    X = get_embedding(df, word_embedding)
     del df["sourcecode"]
     df, clustering = find_clusters(df, X)
-    with pd.option_context("display.max_rows", None, "display.max_columns", None):
-        print(df.groupby("group").agg({"page_id": "count"}))
-
-    ## separate what data to store and what to re-cluster (-1 and 1-2 from each cluster)
 
     col = "cluster" if with_data else "cluster_wo_data"
-    store_data(df, col)
+    store_data(df, col, user_db_port, user, password)
 
 
 if __name__ == "__main__":
@@ -192,6 +208,18 @@ if __name__ == "__main__":
         "-d",
         action="store_true",
         help="Whether to include modules that are marked as data modules.",
+    )
+    parser.add_argument(
+        "--train-model",
+        "-tr",
+        action="store_true",
+        help="Whether to train the embedding model. If not set, will use saved models.",
+    )
+    parser.add_argument(
+        "--word-embedding",
+        "-we",
+        action="store_true",
+        help="Whether to use word embedding (FastText). If not set, doc2vec will be used.",
     )
     local_data = parser.add_argument_group(
         title="Info for connecting to Toolforge from local pc"
@@ -215,4 +243,11 @@ if __name__ == "__main__":
         help="Toolforge password of the tool.",
     )
     args = parser.parse_args()
-    get_similarity(args.with_data, args.user_db_port, args.user, args.password)
+    get_similarity(
+        args.with_data,
+        args.train_model,
+        args.word_embedding,
+        args.user_db_port,
+        args.user,
+        args.password,
+    )
