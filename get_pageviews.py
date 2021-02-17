@@ -37,8 +37,8 @@ def read_dump_file(filepath):
         filename = os.path.join(filepath, filename)
         with gzip.open(filename, "rt") as file:
             for line in file:
-                source, title, pageview, _ = line.split()
-
+                lines = line.split()
+                source, title, pageview = line[0], " ".join(line[1:-2]), int(line[-2])
                 source = source.split(".")
                 if len(source) == 3:
                     del source[1]  # mentions .m (mobile device) or .zero
