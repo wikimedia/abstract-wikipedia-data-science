@@ -3,6 +3,5 @@ mwapi
 pandas
 PyMySQL
 numpy
-scipy
 sklearn
 gensim
