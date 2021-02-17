@@ -2,31 +2,10 @@
   <tbody>
     <div id="wiki-families">
         <!-- Checkboxes list -->
-      <ul>
-        <li v-for='elem in projectFamilies' :key="elem">
-          <input type='checkbox' v-bind:value='elem' v-model='checkedProjectFamilies'
-                 @change='updateCheckallProjects()'> {{ elem }}
-        </li>
-      </ul>
-
-      <!--
-      <input type="checkbox" id="wiki" value="Wikipedia" v-model="projectFamilies" />
-      <label for="wiki">Wikipedia</label>
-      <input type="checkbox" id="wiktionary" value="Wiktionary" v-model="projectFamilies" />
-      <label for="wiktionary">Wiktionary</label>
-      <input type="checkbox" id="wikibooks" value="Wikibooks" v-model="projectFamilies" />
-      <label for="wikibooks">Wikibooks</label>
-      <input type="checkbox" id="wikiquote" value="Wikiquote" v-model="projectFamilies" />
-      <label for="wikiquote">Wikiquote</label>
-      <input type="checkbox" id="wikimedia" value="Wikimedia" v-model="projectFamilies" />
-      <label for="wikimedia">Wikimedia</label>
-      <input type="checkbox" id="wikinews" value="Wikinews" v-model="projectFamilies" />
-      <label for="wikinews">Wikinews</label>
-      <input type="checkbox" id="wikiversity" value="Wikiversity" v-model="projectFamilies" />
-      <label for="wikiversity">Wikiversity</label>
-      <input type="checkbox" id="wikisource" value="Wikisource" v-model="projectFamilies" />
-      <label for="wikisource">Wikisource</label>
-      -->
+      <span v-for='elem in projectFamilies' :key="elem">
+        <input type='checkbox' v-bind:value='elem' v-model='checkedProjectFamilies'
+               @change='updateCheckallProjects()'> {{ elem }}
+      </span>
         <!-- Check All -->
       <input type='checkbox' @click='checkAllProjects()'
              v-model='projectFamiliesCheckAll' :disabled="projectFamiliesCheckAll == 1"> Check All
@@ -37,7 +16,7 @@
     </div>
     <div id="data-modules">
       <input type="checkbox" id="checkbox" v-model="noDataModules" />
-      <label for="checkbox">{{ noDataModules }}</label>
+      <label for="checkbox">Disinclude modules that look like data</label>
     </div>
   </tbody>
 </template>
