@@ -38,7 +38,6 @@ def preprocess_text(document):
 
 
 def train_embedding(
-    with_data,
     is_word,
     user_db_port,
     user,
@@ -64,8 +63,6 @@ def train_embedding(
         )
 
     query = "SELECT page_id, dbname, LEFT(sourcecode, %s) FROM Scripts" % maxlen
-    if not with_data:
-        query += " WHERE is_data=0"
 
     cols = ["page_id", "dbname", "sourcecode"]
     first_iter = True
@@ -173,7 +170,7 @@ def store_data(df, col, user_db_port, user, password):
                 raise Exception(err)
             print("Retrying saving clusters in 1 minute...")
             retry_counter += 1
-            time.sleep(6)
+            time.sleep(60)
         except Exception as err:
             print("Something went wrong. Error saving clusters \n", repr(err))
             break
@@ -184,7 +181,7 @@ def get_similarity(
 ):
 
     if train_model:
-        train_embedding(with_data, word_embedding, user_db_port, user, password)
+        train_embedding(word_embedding, user_db_port, user, password)
 
     df = get_data(with_data, user_db_port, user, password)
     X = get_embedding(df, word_embedding)
