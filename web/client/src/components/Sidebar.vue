@@ -1,11 +1,11 @@
 <template>
-  <tbody>
+  <body>
     <div id="wiki-families">
         <!-- Checkboxes list -->
-      <span v-for='elem in projectFamilies' :key="elem">
+      <div v-for='elem in projectFamilies' :key="elem">
         <input type='checkbox' v-bind:value='elem' v-model='checkedProjectFamilies'
                @change='updateCheckallProjects()'> {{ elem }}
-      </span>
+      </div>
         <!-- Check All -->
       <input type='checkbox' @click='checkAllProjects()'
              v-model='projectFamiliesCheckAll' :disabled="projectFamiliesCheckAll == 1"> Check All
@@ -14,11 +14,12 @@
       <br />
       <span>Checked families: {{ checkedProjectFamilies }}</span>
     </div>
+    <hr class="dotted">
     <div id="data-modules">
       <input type="checkbox" id="checkbox" v-model="noDataModules" />
       <label for="checkbox">Disinclude modules that look like data</label>
     </div>
-  </tbody>
+  </body>
 </template>
 
 <script>
@@ -78,5 +79,16 @@ export default {
 </script>
 
 <style scoped>
-
+  hr.dotted {
+    border-top: 3px dotted #bbb;
+  }
+  body {
+    width: 20%;
+    padding: 20px;
+    background-color: lightcyan;
+    min-height: 100%;
+  }
+  div#wiki-families, div#data-modules {
+    text-align: left;
+  }
 </style>
