@@ -1,7 +1,8 @@
+import re
+import pickle
+import argparse
 import pandas as pd
 import numpy as np
-import re
-import argparse
 from sklearn.cluster import OPTICS
 from gensim.models.fasttext import FastText
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
@@ -17,7 +18,16 @@ def get_data(
     password,
     maxlen=20000,
 ):
+    """
+    Gets all sourcecodes of Lua functions from user's database.
 
+    :param with_data: whether to grab all modules or only those that are not data modules (when false).
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :param maxlen: The length to which the sourcecode should be truncated.
+    :return: DataFrame with columns page_id, dbname, sourcecode
+    """
     query = "SELECT page_id, dbname, LEFT(sourcecode, %s) FROM Scripts" % maxlen
     if not with_data:
         query += " WHERE is_data=0"
@@ -33,6 +43,12 @@ def get_data(
 
 
 def preprocess_text(document):
+    """
+    Tokenizes a string of sourcecode into a list of tokens.
+
+    :param document: A string of sourcecode.
+    :return: List of tokens.
+    """
     pat = r"(?u)\w\w+|[^\w\s]+"
     return re.findall(pat, document)
 
@@ -46,6 +62,18 @@ def train_embedding(
     maxlen=20000,
     embedding_size=32,
 ):
+    """
+    Trains and saves a embedding model on all the sourcecode data available in user's database.
+
+    :param is_word: Whether to train word-embeddings using fasttext, or document embeddings using doc2vec.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :param limit: Number of rows to fetch for each loop of training.
+    :param maxlen: The length to which the sourcecode should be truncated.
+    :param embedding_size: Size of the embedding vector.
+    :return: None
+    """
     if is_word:
         model = FastText(
             size=embedding_size,
@@ -106,7 +134,13 @@ def train_embedding(
 
 
 def get_embedding(df, is_word):
+    """
+    Generates embedding for sourcecodes provided through the dataframe.
 
+    :param df: Dataframe containing sourecodes in the column 'sourcecode'.
+    :param is_word: Whether to use fasttext word-embeddings or doc2vec document-embedding.
+    :return: List of embeddings as a numpy array.
+    """
     if is_word:
         model = FastText.load("fasttext.model")
     else:
@@ -131,6 +165,13 @@ def get_embedding(df, is_word):
 
 
 def find_clusters(df, X):
+    """
+    Run clustering algorithm over the embeddings.
+
+    :param df: The dataframe to which labels are appended.
+    :param X: The list of embeddings to train the clustering algorithm on.
+    :return: (The dataframe with labels in the 'group' column, the clustering model itself)
+    """
     clustering = OPTICS(
         max_eps=np.inf,
         min_samples=5,
@@ -143,7 +184,16 @@ def find_clusters(df, X):
 
 
 def store_data(df, col, user_db_port, user, password):
+    """
+    Stores the labels of clusters in user database field named by 'col'.
 
+    :param df: The dataframe containing labels of clusters along with page_id and dbname.
+    :param col: The field name in user database to which the labels are to be stored.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
     query1 = "UPDATE Scripts SET " + col + "=NULL"
     query2 = "UPDATE Scripts SET " + col + "=%s WHERE page_id=%s AND dbname=%s"
     max_tries = 3
@@ -179,7 +229,17 @@ def store_data(df, col, user_db_port, user, password):
 def get_similarity(
     with_data, train_model, word_embedding, user_db_port, user, password
 ):
+    """
+    Train and perform clustering of Lua modules from users database, save the cluster labels back to user database.
 
+    :param with_data: whether to cluster on all modules or only those that are not data modules (when false).
+    :param train_model: whether to train the embedding model. If false, only loads saved model.
+    :param word_embedding: whether to use word-embedding or document-embedding.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :return: None
+    """
     if train_model:
         train_embedding(word_embedding, user_db_port, user, password)
 
@@ -189,12 +249,17 @@ def get_similarity(
     df, clustering = find_clusters(df, X)
 
     col = "cluster" if with_data else "cluster_wo_data"
+
+    ## Save model for later use
+    with open(col + ".pkl", "wb") as f:
+        pickle.dump(clustering, f)
+
     store_data(df, col, user_db_port, user, password)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Detects similar modules and saves group id in Scripts table."
+        description="Detects similar modules and saves cluster labels in Scripts table."
         "To use from local PC, provide all the additional flags needed for "
         "establishing connection through ssh tunneling."
         "More help available at "
@@ -216,7 +281,7 @@ if __name__ == "__main__":
         "--word-embedding",
         "-we",
         action="store_true",
-        help="Whether to use word embedding (FastText). If not set, doc2vec will be used.",
+        help="Whether to use word-embedding (FastText). If not set, doc2vec will be used.",
     )
     local_data = parser.add_argument_group(
         title="Info for connecting to Toolforge from local pc"
