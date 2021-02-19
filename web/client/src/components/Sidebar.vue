@@ -43,7 +43,6 @@ export default {
       noDataModules: false
     }
   },
-
   methods: {
     checkAllProjects: function () {
       this.projectFamiliesCheckAll = !this.projectFamiliesCheckAll;
@@ -83,7 +82,6 @@ export default {
     border-top: 3px dotted #bbb;
   }
   body {
-    width: 20%;
     padding: 20px;
     background-color: lightcyan;
     min-height: 100%;

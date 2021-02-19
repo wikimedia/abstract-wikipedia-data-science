@@ -1,21 +1,24 @@
 <template>
   <body>
-    <div class="sidebar">
-      <Sidebar/>
-    </div>
     <table>
-    <tr v-for="item in features" :key='item[0]'>
+      <tr>
         <td>
-          {{item[1]}}
+          <div class="sidebar">
+        <Sidebar/>
+          </div>
         </td>
         <td>
-          {{item[2]}}
+          <table>
+            <tr v-for="item in features" :key='item[0]'>
+              <td> {{item[1]}} </td>
+              <td> <input type="number" step="0.01" v-model="item[2]"/> </td>
+            </tr>
+          </table>
         </td>
-        <td>
-          <input type="number" step="0.01" v-model="item[2]"/>
-        </td>
-    </tr>
-  </table>
+      </tr>
+    </table>
+
+
     <div class="form-control">
       <button class="button_submit" v-on:click="getFunctions">Request</button>
     </div>
@@ -25,6 +28,7 @@
 <script>
   import Sidebar from "@/components/Sidebar"
   import axios from "axios";
+  import qs from "qs";
   export default {
     components: {
       Sidebar
@@ -45,13 +49,19 @@
     },
     methods: {
       getFunctions() {
-        axios.post('http://localhost:5000/api/')
-          .then(response => response.json())
+        axios.get('/api/data', {
+          params: {
+            weights: this.Sidebar.noDataModules
+          },
+          paramsSerializer: params => {
+            return qs.stringify(params)
+          }
+        })
           .then(resp => {
             alert('Request sent');
           })
-          .catch(() => {
-            alert('Request failed');
+          .catch(err => {
+            alert('Request failed:'+ err);
           });
       }
     }
