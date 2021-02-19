@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 # configuration
@@ -19,7 +19,13 @@ def ping_pong():
 
 
 @app.route('/api/data', methods=['GET'])
-def get_requested_data(weights, families, wikis):
+def get_requested_data():
+    no_data = request.args.get('noData')
+    chosen_families = request.args.getlist('chosenFamilies[]')
+    # filter = request.args.get('filter', default='*', type=str)
+    print(no_data)
+    print(chosen_families)
+
     test_data = [
         {
             "pageid": 1,
