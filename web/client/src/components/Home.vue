@@ -76,6 +76,11 @@
         noDataModules: false
       }
     },
+    mounted: function () {
+      this.$nextTick(function () {
+        this.checkAllProjects()
+      })
+    },
     methods: {
       getFunctions() {
         axios.get('/api/data', {
@@ -98,7 +103,7 @@
         this.projectFamiliesCheckAll = !this.projectFamiliesCheckAll;
         this.checkedProjectFamilies = []; // Check all
         for (let key in this.projectFamilies) {
-          this.checkedProjectFamilies.push(this.projectFamilies[key]);
+          this.checkedProjectFamilies.push(this.projectFamilies[key ]);
         }
         if (this.projectFamiliesUncheckAll === true) {
           this.projectFamiliesUncheckAll = !this.projectFamiliesUncheckAll;
