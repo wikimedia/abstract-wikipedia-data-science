@@ -40,6 +40,10 @@
     <div class="form-control">
       <button class="button_submit" v-on:click="getFunctions">Request</button>
     </div>
+
+    <ol>
+      <li v-for="(elem, index) in entries" :key="index"> {{ elem.dbname }} - {{ elem.title }}</li>
+    </ol>
   </body>
 </template>
 
@@ -73,7 +77,9 @@
           "Wikisource"
         ],
         checkedProjectFamilies: [],
-        noDataModules: false
+        noDataModules: false,
+
+        entries:[]
       }
     },
     mounted: function () {
@@ -94,6 +100,9 @@
         })
           .then(resp => {
             alert('Request sent ' + resp.status);
+            console.log(resp.data.data);
+            this.entries = resp.data.data;
+
           })
           .catch(err => {
             alert('Request failed:'+ err);

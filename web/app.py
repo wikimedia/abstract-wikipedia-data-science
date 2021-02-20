@@ -18,6 +18,11 @@ def ping_pong():
     return jsonify('pong!')
 
 
+@app.route('/api/<wiki>/<id>')
+def get_single_script_data(wiki, id):
+    pass
+
+
 @app.route('/api/data', methods=['GET'])
 def get_requested_data():
     no_data = request.args.get('noData')
@@ -43,13 +48,13 @@ def get_requested_data():
         },
         {
             "pageid": 3,
-            "dbname": "enwiktionary",
+            "dbname": "enwiktionary ",
             "title": "C",
             "sourcecode": "CCCCCCCC",
 
         },
     ]
-    test_data = [1, 2, 3]
+    #test_data = [1, 2, 3]
     return jsonify({
         'status': 'success',
         'data': test_data
