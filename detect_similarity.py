@@ -23,17 +23,19 @@ def get_data(
         query += " WHERE is_data=0"
 
     cols = ["page_id", "dbname", "sourcecode"]
-    conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+    conn = db_acc.connect_to_user_database(
+        DATABASE_NAME, user_db_port, user, password)
     with conn.cursor() as cur:
         cur.execute(query)
-        df = pd.DataFrame(cur.fetchall(), columns=cols).applymap(encode_if_necessary)
+        df = pd.DataFrame(cur.fetchall(), columns=cols).applymap(
+            encode_if_necessary)
     close_conn(conn)
 
     return df
 
 
 def preprocess_text(document):
-    pat = r"(?u)\w\w+|[^\w\s]+"
+    pat = r"(?u)\w+|[^\w\s]"
     return re.findall(pat, document)
 
 
@@ -151,7 +153,7 @@ def store_data(df, col, user_db_port, user, password):
 
     while True:
         try:
-            ## Need to keep query1 and query2 in the same transaction
+            # Need to keep query1 and query2 in the same transaction
             conn = db_acc.connect_to_user_database(
                 DATABASE_NAME, user_db_port, user, password
             )
@@ -159,7 +161,8 @@ def store_data(df, col, user_db_port, user, password):
                 cur.execute(query1)
                 for _, elem in df.iterrows():
                     cur.execute(
-                        query2, [elem["group"], elem["page_id"], elem["dbname"]]
+                        query2, [elem["group"],
+                                 elem["page_id"], elem["dbname"]]
                     )
             conn.commit()
             close_conn(conn)
