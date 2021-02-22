@@ -4,6 +4,7 @@ import Ping from '@/components/Ping';
 import Sidebar from "@/components/Sidebar";
 import Home from "@/components/Home";
 import PageNotFound from "@/components/PageNotFound";
+import ScriptPage from "@/components/ScriptPage";
 
 Vue.use(Router);
 
@@ -18,6 +19,11 @@ export default new Router({
       path: "/side",
       name: "Sidebar",
       component: Sidebar,
+    },
+    {
+      path: "/:dbname/:pageid",
+      name: "Script Page",
+      component: ScriptPage,
     },
     {
       path: "/:pathMatch(.*)*",

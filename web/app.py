@@ -20,7 +20,21 @@ def ping_pong():
 
 @app.route('/api/<wiki>/<id>')
 def get_single_script_data(wiki, id):
-    pass
+    test_script = ("")
+    test_data = {
+        "pageid": id,
+        "dbname": wiki,
+        "title": 'TESTPAGE',
+        "sourcecode": ("SOME TEST CODE GOES IN THERE\n"
+                       " AND A BIT MORE LINES"),
+        "similarItems": []
+
+    }
+
+    return jsonify({
+        'status': 'success',
+        'data': test_data
+    })
 
 
 @app.route('/api/data', methods=['GET'])
