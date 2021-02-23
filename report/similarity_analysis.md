@@ -8,7 +8,7 @@ In our case we want to provide users with a list of modules that possibly perfor
 
 # Types of modules
 
-Modules are not only functions but also places to store a bit of data, like list pronounciation, longitude-latitude of places etc. Looking at the distribution of the length of modules, we see lots of modules with very large character count. On analysis we find that most of these are infact data modules and not some very large convoluted lua function. To find similar modules, we therefore separate data modules and include the option for users to view either all modules, or modules that are only functions.
+Modules are not only functions but also places to store a bit of data, like list of pronounciations, longitude-latitude of places etc. Looking at the distribution of the length of modules, we see lots of modules with very large character count. On analysis we find that most of these are infact data modules and not some very large convoluted lua function. To find similar modules, we therefore separate data modules and include the option for users to view either all modules, or modules that are only functions.
 
 Data modules were isolated in this task [T273767](https://phabricator.wikimedia.org/T273767).
 
@@ -18,11 +18,11 @@ To group modules we start with distance based analysis of modules and use those 
 
 ## Features
 
-1. **Levenshtein distance:** Levenshtein distance between two sequence is the minimum number of single-character edits (insertions, deletions or substitutions) required to change one word into the other ([Wkipedia](https://en.wikipedia.org/wiki/Levenshtein_distance)). Basically this distance can tell us how similar two modules are, and to normalize caracter counts we divide the count by the sum of lengths of the two modules.
+1. **Levenshtein distance:** Levenshtein distance between two sequence is the minimum number of single-character edits (insertions, deletions or substitutions) required to change one word into the other ([Wkipedia](https://en.wikipedia.org/wiki/Levenshtein_distance)). Basically this distance can tell us how similar two modules are, and to normalize caracter counts we divide the count by the sum of lengths of the two modules. This distance matrix was then used as input to various clustering algorithms.
 
    `Lev(A,B) = Levenshtein_distance(A,B)/( Length(A) + Length(B) )`
 
-   One idea was to use diffing (like in git). Analysing some plagarism detection algorithms I found that Levenshtein distance covers it already in a better way and the memory footprint for diffing is not any lower. This distance matrix was then used as input to various clustering algorithms.
+   One idea was to use diffing (like in git). Analysing some plagarism detection algorithms I found that Levenshtein distance covers it already in a better way and the memory footprint for diffing is not any lower.
 
    Note: I also looked into using plagarism detector as a way to find similar codes but unfortunately none was found comptible for Lua codes.
 
@@ -30,43 +30,78 @@ To group modules we start with distance based analysis of modules and use those 
 
 3. **Tf-idf:** [Td-idf](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) is the most common method to represent any text in numeric form. For each token it calculates a value representing importance of the token in the corpus. tf-idf of tokens along with n-grams of tokens give better representation of the document to be used as feature.
 
-4. **Word Embedding:** Word embeddings are high-dimentional vectors that represent each token and have values such that similar tokens are nearer in the vector space than un-related tokens. A word-embedding model (fasttext in our case) has to be trained only once and then vector representation of any word ca be generated from the trained model. A representation of word embeddings in 2d plane is shown below, some simialar words are seen nearby.
+4. **Word Embedding:** Word embeddings are high-dimentional vectors that represent each token and have values such that similar tokens are nearer in the vector space than un-related tokens. A word-embedding model (fasttext in our case) has to be trained only once and then vector representation of any word can be generated from the trained model. A representation of word embeddings in 2D plane is shown below, some similar words are seen nearby.
 
-![](img/WE_map.png)
+   ![](img/WE_map.png)
 
-Since it gives us an embedding for each token, the way to get embedding for the whole module can be one of two ways:
+   Since it gives us an embedding for each token, the way to get embedding for the whole module can be one of two ways:
 
-- Averaged Embeddings: Average all word-embeddings, so it gives us a small vector for each module. Altough it sounds hacky, this method actually works for numerous text processing systems like document classification, sentiment analysis etc.
-- Concatenated Embeddings: Instead of averaging, all embeddings are concatenated together. This requires fixing a length for wach module. Longer code is trucated, shorter ones are post-padded.
+   - Averaged Embeddings: Average all word-embeddings, so it gives us a small vector for each module. Altough it sounds hacky, this method actually works for numerous text processing systems like document classification, sentiment analysis etc.
+   - Concatenated Embeddings: Instead of averaging, all embeddings are concatenated together. This requires fixing a length for each module. Longer code is trucated, shorter ones are post-padded.
 
 5. **Document Embedding:** Doc2Vec can be used to get a embedding for the whole document in one shot. This also is trained once and embedding for any document is generated on the go. A sample of doc2vec embedings reduced to 2 dimentions is plotted below with the module titles.
 
-![](img/docEmb_map.png)
+   ![](img/docEmb_map.png)
 
 6. **Code Embedding:** So far text-analysis based methods have been used to numericalize Lua modules. Some models are available to project specifically 'codes' into a vector space (e.g [Code2Vec](https://code2vec.org/)). Unfortunately most available models are trained in populalar languages like Python, C++, Java etc. To train Lua codes in these models some time must be spent understanding and creating a `Lua extractor` which takes in raw Lua codes and uses ASTs of codes to produce input that the model can then take in. We have not ventured into these territories yet but a trained Lua Code2Vec can be beneficial for lots of other tasks as well. Something we can look into later.
 
 ## Clustering Algorithms
 
-1. Naive method
-2. KMeans
-3. Affinity Propagation
-4. Heirarchical Clustering
-5. DBSCAN
-6. OPTICS
+The most basic method to find similar modules would be - for each module, get a list of nearest modules. Nearest could mean least Levenshtein diatnces, or least eucledian or cosine distances of the embeddings. This would require us to compute the diatances of all modules for each module in runtime. This isn't feasible as O(n) on ~300k modules everytime is a bit much.
+
+Using clustering we could store the cluster ids in database and get list of modules in the same cluster using those ids. The difference is that we get a limited number of modules instead of a list of all clusters in descending order of similarity. Getting a couple of related modules instead of all modules is enough for our case as users would not scroll through the entire list. Sometimes the clusters are too small, in that case other related clusters can be pointed out to the user to explore. Below the results of testing various suitable clustering algorithms for module similarity detection are described.
+
+1. **KMeans:**
+
+   - KMeans algorithm requires a parameter mentioning the number of clusters we want generated from the data (parametric). Given we do not know this before hand, the elbow method can be used to find the optimum number of clusters.
+   - KMeans is a bit slower than the other methods mentioned below.
+   - With large number of clusters (still small in comparison to the number of modules) easily runs out of memory.
+   - On analysis with a subset of the modules (1k) reaveals that the modules in a cluster are not as correlated as we would like.
+
+2. **DBSCAN:**
+
+   - It does not require knowing the number of clusters before hand (non-parametric).
+   - Running DBSCAN on subset of the modules show that it identifies a lot of the modules as noise. Others are divided among lots of small clusteres but the modules within each cluster are highly relevant.
+   - DBSCAN from scikit-learn is optimized for speed, not memory. So it runs out of memory when running with all the modules.
+   - The most important parameter in DBSCAN is `eps`, the maximum distance between two samples for one to be considered as in the neighborhood of the other (source: [sklearn docs](https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html)). Tuning this parameter has drastic effects yet the number of noise does not decrease, nor do the size of the clusters grow significantly (except for few clusters that grow too much).
+
+3. **Affinity Propagation:**
+
+   - Also non-parametric
+   - Output worse than DBSCAN, almost all points as considered noise, 2-3 very large clusters, and the rest are single module clusters. Scenario does not change on tuning various parameters.
+   - Not used for further testing due to output imbalance.
+
+4. **Heirarchical Clustering:**
+
+   - Non-parametric.
+   - Results are similar to Affinity propagation, also not used further.
+   - A bit slower.
+
+5. **OPTICS:**
+   - OPTICS works similar to DBSCAN but scikit-learn OPTICS is optimized for memory rather than speed. So it takes much longer to train all modules but fits in memory.
+   - It does not have sensitive parameters like DBSCANs `eps`. It works dynamically on various eps values.
+   - Output is similar to DBSCAN with well-defined clusters but lots of noise too. OPTICS is trained such that module relevancy is calculated and clusters are formed from these values. To reduce noise and merge smaller clusters these values can be used to customize clusters ourselves. Besides, the `xi` value can be tuned to change cluster sizes in general.
 
 ## Summary of pros and cons
 
-(with 500 random modules)
+All the features can be used with all the algorithms mentioned above but not all options are worth testing. Some techniques have patterns that can help us isolate the better method for us, like memory consumption, time taken, types of clusters formed etc. A brief table is shown with summary of the results. If the algorithm runs out of memory for all modules, the clustering analysis of 500-1k modules was given instead (as analysis was done on a small subset first).
 
-| Feature                      | Clustering Algo      | Time                                                       | Memory                                                                                                         | clusters                                                                                                                                           |
-| ---------------------------- | -------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Levenshtein                  | dbscan               | instant                                                    | memory runs out with all modules (as Levenshtein creates nxn matrix )                                          | Lots of small clusters and too many noise detected                                                                                                 |
-| Levenshtein                  | affinity propagation | instant                                                    | -                                                                                                              | Most in 2-3 clusters, rest are individual clusters (size=1)                                                                                        |
-| Levenshtein                  | heirarchical         | instant                                                    | -                                                                                                              | Similar to affinity propagation                                                                                                                    |
-| Levenshtein                  | KMeans (after MDS)   | bit slow                                                   | memory runs out with large number of clusters                                                                  | Elbow method to find `number of cluster` parameter. Evenly sized clusters but modules within clusters are not highly realted                       |
-| Tf-idf                       | KMeans               | tfidf is really slow                                       | runs out of memory on tf-idf step for all data (estimated amount of memory required is too high >1000s of GBs) | Detects reLevenshteinant clusters and cluster sizes are medium with only a few noise clusters (cluster of all modules that dont fit anything else) |
-| Tf-idf                       | DBSCAN               | tfidf is really slow                                       | runs out of memory on all data due to Tf-idf                                                                   | Better than Levenshtein DBSCAN but still a lot of noise                                                                                            |
-| Word Embedding (FastText)    | KMeans               | Embedding all data takes 12 hours, but is a one time thing | -                                                                                                              | Clusters have long tail and arent as related either                                                                                                |
-| Word Embedding (FastText)    | DBSCAN               | As above                                                   | Out of memory for all data                                                                                     | Lots of noise, clusters are highly related                                                                                                         |
-| Word Embedding (FastText)    | OPTICS               | As above plus takes long time for clustering               | Fits. Tradeoff with time.                                                                                      | Lots of noise, clusters sizes are moderate (on tuning). Noise can be reduced by tuning as well.                                                    |
-| Docement Embedding (Doc2Vec) | OPTICS               | As above                                                   | Fits. Tradeoff with time.                                                                                      | More noise than fasttext version. Clusters are smaller in size and less in number. Tuning possible.                                                |
+| Feature                          | Clustering Algo      | Time                                                       | Memory                                                                                                         | clusters                                                                                                                                   |
+| -------------------------------- | -------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Levenshtein                      | dbscan               | instant                                                    | memory runs out with all modules (as Levenshtein creates nxn matrix )                                          | Lots of small clusters and too many noise detected                                                                                         |
+| Levenshtein                      | affinity propagation | instant                                                    | -                                                                                                              | Most in 2-3 clusters, rest are individual clusters (size=1)                                                                                |
+| Levenshtein                      | heirarchical         | instant                                                    | -                                                                                                              | Similar to affinity propagation                                                                                                            |
+| Levenshtein                      | KMeans (after MDS)   | bit slow                                                   | memory runs out with large number of clusters                                                                  | Elbow method to find `number of cluster` parameter. Evenly sized clusters but modules within clusters are not highly realted               |
+| Tf-idf                           | KMeans               | tfidf is really slow                                       | runs out of memory on tf-idf step for all data (estimated amount of memory required is too high >1000s of GBs) | Detects relevant clusters and cluster sizes are medium with only a few noise-clusters (cluster of all modules that dont fit anything else) |
+| Tf-idf                           | DBSCAN               | tfidf is really slow                                       | runs out of memory on all data due to Tf-idf                                                                   | Better than Levenshtein DBSCAN but still a lot of noise                                                                                    |
+| Word Embedding (FastText)        | KMeans               | Embedding all data takes 12 hours, but is a one time thing | memory runs out with large number of clusters-                                                                 | Clusters have long tail and arent as related either                                                                                        |
+| Word Embedding (FastText)        | DBSCAN               | As above                                                   | Out of memory for all data                                                                                     | Lots of noise, clusters are highly related                                                                                                 |
+| **Word Embedding (FastText)**    | **OPTICS**           | As above plus takes long time for clustering               | Fits. Tradeoff with time.                                                                                      | Lots of noise, clusters sizes are moderate (on tuning). Noise can be reduced by tuning as well.                                            |
+| **Docement Embedding (Doc2Vec)** | **OPTICS**           | As above                                                   | Fits. Tradeoff with time.                                                                                      | More noise than fasttext version. Clusters are smaller in size and less in number. Tuning possible.                                        |
+
+A TSNE plot (rendering high-dimentional vectors in 2D) is shown below for Doc2Vec-OPTICS with colors for different clusters. The blue markers are noise (as marked by the algorithm) and the rest are various clusters. The second image shows the same figure without the modules marked noise.
+
+<p float="left">
+  <img src="/img/TSNE-doc.png" width="49%" />
+  <img src="/img/TSNE-doc2.png" width="49%" /> 
+</p>
