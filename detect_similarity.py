@@ -182,7 +182,19 @@ def find_clusters(df, X):
         cluster_method="xi",
         n_jobs=-1,
     ).fit(X)
-    return df.assign(group=clustering.labels_), clustering
+
+    # Mark clusters
+    df = df.assign(group=clustering.labels_)
+
+    # Remove Noise
+    last_num = -0.5
+    for i, row in df.iloc[clustering.ordering_].iterrows():
+        if row['group'] == -1:
+            df.loc[i, 'group'] = last_num
+        else:
+            last_num = row['group'] + 0.5
+
+    return df, clustering
 
 
 def store_data(df, col, user_db_port, user, password):
