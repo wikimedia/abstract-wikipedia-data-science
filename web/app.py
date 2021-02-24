@@ -1,15 +1,28 @@
-from flask import Flask, jsonify, request
+import os
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 # configuration
 DEBUG = True
 
+# set static files dir
+static_file_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'client/dist')
+
 # instantiate the app
-app = Flask(__name__)
+app = Flask(__name__,
+            static_url_path='',
+            static_folder=static_file_dir,
+            )
 app.config.from_object(__name__)
 
 # enable CORS
 CORS(app)
+
+
+# Main route, serve the web page, where you will import the js and css built files
+@app.route('/')
+def index():
+    return send_from_directory(static_file_dir, 'index.html')
 
 
 # sanity check route
@@ -68,7 +81,7 @@ def get_requested_data():
 
         },
     ]
-    #test_data = [1, 2, 3]
+    # test_data = [1, 2, 3]
     return jsonify({
         'status': 'success',
         'data': test_data
