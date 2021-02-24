@@ -4,25 +4,37 @@
       <tr>
         <td>
           <div class="sidebar">
-              <div id="wiki-families">
+            <badger-accordion :icons="true">
+              <badger-accordion-item>
+                <template slot="header">Choose wikipedia project families ▽</template>
+                <template slot="content">
+                  <div id="wiki-families">
                   <!-- Checkboxes list -->
-                <div v-for='elem in projectFamilies' :key="elem">
-                  <input type='checkbox' v-bind:value='elem' v-model='checkedProjectFamilies'
+                    <div v-for='elem in projectFamilies' :key="elem">
+                    <input type='checkbox' v-bind:value='elem' v-model='checkedProjectFamilies'
                          @change='updateCheckallProjects()'> {{ elem }}
-                </div>
+                    </div>
                   <!-- Check All -->
-                <input type='checkbox' @click='checkAllProjects()'
+                    <input type='checkbox' @click='checkAllProjects()'
                        v-model='projectFamiliesCheckAll' :disabled="projectFamiliesCheckAll == 1"> Check All
-                <input type='checkbox' @click='uncheckAllProjects()'
+                    <input type='checkbox' @click='uncheckAllProjects()'
                        v-model='projectFamiliesUncheckAll' :disabled="projectFamiliesUncheckAll == 1"> Uncheck All
-                <br />
-                <span>Checked families: {{ checkedProjectFamilies }}</span>
-              </div>
-              <hr class="dotted">
-              <div id="data-modules">
+                    <br />
+                  </div>
+                </template>
+              </badger-accordion-item>
+
+              <badger-accordion-item>
+                <template slot="header">Choose whether to work with data modules ▽</template>
+                <template slot="content">
+                  <div id="data-modules">
                 <input type="checkbox" id="checkbox" v-model="noDataModules" />
                 <label for="checkbox">Disinclude modules that look like data</label>
               </div>
+                </template>
+              </badger-accordion-item>
+            </badger-accordion>
+
           </div>
         </td>
         <td>
@@ -48,7 +60,7 @@
 </template>
 
 <script>
-
+  import {BadgerAccordion, BadgerAccordionItem} from "vue-badger-accordion";
   import axios from "axios";
   import qs from "qs";
   export default {
@@ -86,6 +98,10 @@
       this.$nextTick(function () {
         this.checkAllProjects()
       })
+    },
+    components: {
+        BadgerAccordion,
+        BadgerAccordionItem
     },
     methods: {
       getFunctions() {
@@ -148,9 +164,6 @@
   table {
     table-layout: fixed;
   }
-  hr.dotted {
-    border-top: 3px dotted #bbb;
-  }
   .sidebar {
     padding: 20px;
     background-color: lightcyan;
@@ -158,5 +171,9 @@
   }
   div#wiki-families, div#data-modules {
     text-align: left;
+  }
+  .badger-accordion__header .js-badger-accordion-header .badger-accordion-toggle {
+    font-family: Avenir, Helvetica, Arial, sans-serif;
+    font-size: large !important;
   }
 </style>
