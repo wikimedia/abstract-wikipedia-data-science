@@ -7,5 +7,8 @@ npm install
 # build js
 npm run build
 
+# copy dist folder
+cp -avp dist/ $HOME/www/python/src/client/
+
 # exit docker
 exit
