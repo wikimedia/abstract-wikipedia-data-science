@@ -180,6 +180,7 @@ def find_clusters(df, X):
         metric="minkowski",
         algorithm="auto",
         cluster_method="xi",
+        xi=0.05,
         n_jobs=-1,
     ).fit(X)
 
@@ -264,12 +265,54 @@ def get_similarity(
     df, clustering = find_clusters(df, X)
 
     col = "cluster" if with_data else "cluster_wo_data"
+    word = "WE" if word_embedding else "doc"
 
     # Save model for later use
-    with open(col + ".pkl", "wb") as f:
+    with open(word + "_" + col + ".pkl", "wb") as f:
         pickle.dump(clustering, f)
 
     store_data(df, col, user_db_port, user, password)
+
+
+def get_cluster(
+    with_data, user_db_port, user, password, page_id=None, dbname=None, cluster_number=0, is_cluster=False
+):
+    """
+    Get similar modules with (page_id, dbname) or with cluster_number.
+
+    :param with_data: whether to get cluster from 'cluster' column. If false, will get data from 'cluster_wo_data' columns.
+    :param user_db_port: port for connecting to local Sources table through ssh tunneling, if used.
+    :param user: Toolforge username of the tool.
+    :param password: Toolforge password of the tool.
+    :param page_id: Has to be provided with dbname, used when is_cluster=False. The page whose similar modules is sought.
+    :param dbname: Has to be provided with page_id, used when is_cluster=False. The database of page whose similar modules is sought.
+    :param cluster_number: Used when is_cluster=True. The cluster number/id to fetch all pages of that cluster.
+    :return: None
+    """
+    col = "cluster" if with_data else "cluster_wo_data"
+
+    if not is_cluster:
+        query = "SELECT %s FROM Scripts WHERE page_id=%s AND dbname=%s" % (
+            col, page_id, dbname)
+        conn = db_acc.connect_to_user_database(
+            DATABASE_NAME, user_db_port, user, password)
+        with conn.cursor() as cur:
+            cur.execute(query)
+            cluster_number = cur.fetchone()[0]
+        close_conn(conn)
+
+    query = "SELECT page_id, dbname FROM Scripts WHERE %s=%s" % (
+        col, cluster_number)
+    cols = ["page_id", "dbname"]
+    conn = db_acc.connect_to_user_database(
+        DATABASE_NAME, user_db_port, user, password)
+    with conn.cursor() as cur:
+        cur.execute(query)
+        df = pd.DataFrame(cur.fetchall(), columns=cols).applymap(
+            encode_if_necessary)
+    close_conn(conn)
+
+    return df
 
 
 if __name__ == "__main__":
