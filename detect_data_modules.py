@@ -25,8 +25,10 @@ def detect_data_modules(full_run=False, user_db_port=None, user=None, password=N
     cols = ["page_id", "dbname", "sourcecode", "is_data"]
     function_name = "detect_data_modules"
 
+    no_offset = False
     if not full_run:
         query += new_values_query
+        no_offset = True
 
     for df in query_data_generator(
             query,
@@ -37,7 +39,7 @@ def detect_data_modules(full_run=False, user_db_port=None, user=None, password=N
             user_db_port=user_db_port,
             user=user,
             password=password,
-            no_offset=True
+            no_offset=no_offset
     ):
         sourcecodes = df.loc[:, 'sourcecode']
         for i in range(sourcecodes.shape[0]):
