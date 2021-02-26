@@ -4,22 +4,24 @@ Repository for fetching and analyzing community functions across all wiki projec
 
 This project is Outreachy 21 task, more info can be found in [phabricator](https://phabricator.wikimedia.org/T263678).
 
-### Description
+## Description
 
-This project aims to find Scibunto modules with similar functions on different Wikimedia's wikis.
+This project aims to find important Scibunto modules with similar functions on different Wikimedia's wikis.
 Highlighting such modules would allow storing them in more centralized manner, so the users wouldn't
 have to copy-paste them from one wiki to another, or "reinvent the wheel" trying to make a script with wanted
 functionality.
 
 For reaching this goal, first all the Scribunto modules should be fetched from all the wikis and stored in more
 centralized fashion, along with additional data for analysis. Then through comparing different data, such as titles,
-usages and source codes, we expect to distinguish modules, which can be made centralized for better.
+usages and source codes, we expect to distinguish modules, which can be centralized for better.
 
-### How to use
+## How to use
+
+## How to re-create
 
 _1. Create Wikimedia developer account and create a new tool in Toolforge._
 
-The scripts get a lot of information from Wikimedia table replicas, and these replicas are accessed from the
+The scripts get a lot of information from Wikimedia database replicas, and these replicas are accessed from
 Toolforge. Please follow [this page](https://wikitech.wikimedia.org/wiki/Portal:Toolforge/Quickstart)
 to create an account, and a new tool to use this project in.
 
@@ -46,32 +48,29 @@ Some scripts require positional arguments to run correctly, especially if you wa
 (more info [here](#how-to-use-code-remotely)). To find out more on which exactly arguments the program needs,
 help is available by running `python3 <script-name> -h`.
 
-In short, right now only _fetch_content.py_ has obligatory parameters _start_idx_ and _end_idx_, which are used
-to let you choose an exact range of wikis you want to fetch modules from (indexes start with 0, and the order of them
-is based on _Sources_ table order).
-
 The order to run the scripts is:
 
-1. wikis_parser.sh
-2. fetch_content.sh
+1. wikis_parser.py
+2. fetch_content.py
 3. db_script.sh
 
    - db_script.py
    - get_db_pages.py
    - remove_missed.py
 
-4. fetch_db_info.sh
-5. get_distribution.sh
-6. detect_data_modules.sh
-7. get_pageviews.sh
+4. fetch_db_info.py
+5. get_pageviews.py
+6. get_distribution.py
+7. detect_data_modules.py
+8. detect_similarity.py
 
 As running some scripts require quite a lot of time and computations, when in Toolforge environment,
 it is recommended to use [jsub](https://wikitech.wikimedia.org/wiki/Help:Toolforge/Grid#Submitting_simple_one-off_jobs_using_'jsub').
-You can submit a jsub job by using corresponding script from _shell_scripts_ folder.
+You can submit a jsub job by using corresponding script from _shell_scripts_ folder. For single python scripts, a convenience script is `py_script.sh`, e.g `py_script.sh python/script/name.py --python-args`.
 
 We run these scripts as cronjobs. A list of all jobs set up for cron can be found in [cronjobs.txt](cronjobs.txt). It is recommended to view this file to see how exactly the scripts are run.
 
-#### What python files are doing
+### Function of python files
 
 1. wikis_parser.py
 
@@ -81,8 +80,6 @@ We run these scripts as cronjobs. A list of all jobs set up for cron can be foun
 
    Collects source code of Scribunto modules from the list of the wikis, stored in Sources, using Wikimedia API;
    saves this info to Scripts table.
-
-   Can be used to revise the info about pages, stored in the Scripts table. For this, use `--revise` argument.
 
 3. db_script.py
 
@@ -111,9 +108,13 @@ We run these scripts as cronjobs. A list of all jobs set up for cron can be foun
 
    Tries to detect so-called "data functions" - functions, which are used only for storing data, without any processing - using regular expressions on their sourcecodes; the results are saved into the database `is_data` field. Current implementation _does not_ promise that all the data functions are marked as such, but it does sort out most of the cases.
 
-9. get_pageviews.py
+9. detect_similarity.py
 
-   Fetch and sum pageviews of all pages that transclude a module, for all modules.
+   Clusters similar modules together and stores cluster-ids in Scripts table in the `cluster` field. It also performs clustering only on non-data modules (`is_data` = 0) and stores cluster-ids in `cluster_wo_data` field.
+
+10. get_pageviews.py
+
+    Fetch and sum pageviews of all pages that transclude a module, for all modules.
 
 ### How to use code remotely
 
@@ -125,7 +126,7 @@ The ssh port of 1st connection is referred to as _replicas port_, as it allows c
 the ssh port of 2nd connection is referred to as _user db port_, as user's database is stored in Tools.
 
 Additionally, you'll need to know the username and password of the tool, where you created the user's database.
-This info is stored into _$HOME/replica.my.cnf_ so get this file's content, for example,
+This info is stored into _$HOME/replica.my.cnf_ to get this file's content, for example,
 with `$ cat $HOME/replica.my.cnf`
 
 To run scripts from local environment, you need to use some parameters.
