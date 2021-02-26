@@ -22,12 +22,12 @@ export default new Router({
     },
     {
       path: "/:dbname/:pageid",
-      name: "Script Page",
+      name: "ScriptPage",
       component: ScriptPage,
     },
     {
       path: "/:pathMatch(.*)*",
-      name: "Page Not Found",
+      name: "PageNotFound",
       component: PageNotFound,
     }
   ],

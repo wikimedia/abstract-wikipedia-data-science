@@ -33,7 +33,12 @@
       let dbname = this.$route.params.dbname;
       let pageid = this.$route.params.pageid;
       axios.get('api/'+ dbname + '/' + pageid).then(resp => {
-        this.script = resp.data.data;
+        if (resp.data.status == 'success') {
+          this.script = JSON.parse(resp.data.data);
+        }
+        else {
+          this.$router.push( { name: "PageNotFound"})
+        }
 
       })
       .catch(err => {

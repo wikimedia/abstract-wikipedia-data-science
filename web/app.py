@@ -1,6 +1,8 @@
 import os
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request
 from flask_cors import CORS
+
+from web.server_utils.database_connections import get_sourcecode_from_database
 
 # configuration
 DEBUG = True
@@ -10,8 +12,8 @@ static_file_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'cli
 
 # instantiate the app
 app = Flask(__name__,
-            static_url_path='',
-            static_folder=static_file_dir,
+            # static_url_path='',
+            # static_folder=static_file_dir,
             )
 app.config.from_object(__name__)
 
@@ -20,9 +22,9 @@ CORS(app)
 
 
 # Main route, serve the web page, where you will import the js and css built files
-@app.route('/')
-def index():
-    return send_from_directory(static_file_dir, 'index.html')
+#@app.route('/')
+#def index():
+#    return send_from_directory(static_file_dir, 'index.html')
 
 
 # sanity check route
@@ -33,20 +35,15 @@ def ping_pong():
 
 @app.route('/api/<wiki>/<id>')
 def get_single_script_data(wiki, id):
-    test_script = ("")
-    test_data = {
-        "pageid": id,
-        "dbname": wiki,
-        "title": 'TESTPAGE',
-        "sourcecode": ("SOME TEST CODE GOES IN THERE\n"
-                       " AND A BIT MORE LINES"),
-        "similarItems": []
+    df = get_sourcecode_from_database(wiki, id, 1147)
 
-    }
-
+    if df is None:
+        return jsonify({
+            'status': 'NotFound',
+        })
     return jsonify({
         'status': 'success',
-        'data': test_data
+        'data': df.to_json()
     })
 
 
