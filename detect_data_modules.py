@@ -42,7 +42,7 @@ def detect_data_modules(full_run=False, user_db_port=None, user=None, password=N
         sourcecodes = df.loc[:, 'sourcecode']
         for i in range(sourcecodes.shape[0]):
             curr_code = remove_comments(sourcecodes.iat[i])
-            df.at[i, 'is_data'] = check_if_data_function(curr_code)
+            df.loc[i, 'is_data'] = check_if_data_function(curr_code)
 
         grouped = df.groupby(df["dbname"])
         for db_name in df["dbname"].unique():
