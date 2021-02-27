@@ -10,13 +10,26 @@ from utils.db_query import *
 import utils.db_access as db_acc
 from constants import DATABASE_NAME
 
+EMBEDDING_SIZE = 32
+WINDOW = 5
+MIN_COUNT = 5
+MAX_VOCAB = 60000
+MAXLEN = 20000
+MAX_EPS = np.inf
+MIN_SAMPLES = 5
+METRIC = "minkowski"
+ALGORITHM = "auto"
+CLUSTER_METHOD = "xi"
+XI = 0.0005
+EPOCHS = 10
+
 
 def get_data(
     with_data,
     user_db_port,
     user,
     password,
-    maxlen=20000,
+    maxlen=MAXLEN,
 ):
     """
     Gets all sourcecodes of Lua functions from user's database.
@@ -61,8 +74,8 @@ def train_embedding(
     user,
     password,
     limit=10000,
-    maxlen=20000,
-    embedding_size=32,
+    maxlen=MAXLEN,
+    embedding_size=EMBEDDING_SIZE,
 ):
     """
     Trains and saves a embedding model on all the sourcecode data available in user's database.
@@ -79,17 +92,17 @@ def train_embedding(
     if is_word:
         model = FastText(
             size=embedding_size,
-            window=5,
-            min_count=5,
-            max_vocab_size=60000,
+            window=WINDOW,
+            min_count=MIN_COUNT,
+            max_vocab_size=MAX_VOCAB,
             sg=1,  # skip-gram
         )
     else:
         model = Doc2Vec(
             vector_size=embedding_size,
-            window=5,
-            min_count=5,
-            max_vocab_size=60000,
+            window=WINDOW,
+            min_count=MIN_COUNT,
+            max_vocab_size=MAX_VOCAB,
         )
 
     query = "SELECT page_id, dbname, LEFT(sourcecode, %s) FROM Scripts" % maxlen
@@ -119,12 +132,12 @@ def train_embedding(
         if is_word:
             model.build_vocab(sentences=list_of_list, update=(not first_iter))
             model.train(
-                sentences=list_of_list, total_examples=len(list_of_list), epochs=10
+                sentences=list_of_list, total_examples=len(list_of_list), epochs=EPOCHS
             )
         else:
             model.build_vocab(documents=list_of_list, update=(not first_iter))
             model.train(
-                documents=list_of_list, total_examples=len(list_of_list), epochs=10
+                documents=list_of_list, total_examples=len(list_of_list), epochs=EPOCHS
             )
 
         first_iter = False
@@ -175,12 +188,12 @@ def find_clusters(df, X):
     :return: (The dataframe with labels in the 'group' column, the clustering model itself)
     """
     clustering = OPTICS(
-        max_eps=np.inf,
-        min_samples=5,
-        metric="minkowski",
-        algorithm="auto",
-        cluster_method="xi",
-        xi=0.05,
+        max_eps=MAX_EPS,
+        min_samples=MIN_SAMPLES,
+        metric=METRIC,
+        algorithm=ALGORITHM,
+        cluster_method=CLUSTER_METHOD,
+        xi=XI,
         n_jobs=-1,
     ).fit(X)
 
@@ -317,7 +330,7 @@ def get_cluster(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Detects similar modules and saves cluster labels in Scripts table."
+        description="Detects similar modules with OPTICS algorithm and saves cluster labels in Scripts table."
         "To use from local PC, provide all the additional flags needed for "
         "establishing connection through ssh tunneling."
         "More help available at "
