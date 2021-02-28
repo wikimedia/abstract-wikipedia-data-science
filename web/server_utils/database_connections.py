@@ -94,3 +94,29 @@ def get_close_sourcecodes(dbname, page_id, cluster, user_db_port=None):
             return df
     except Exception as err:
         print("Something went wrong. ", repr(err))
+
+
+def get_titles_and_filters(df, user_db_port=None):
+    query = (
+        "select dbname, page_id, title "
+        "from Scripts "
+        "where page_id = %s and dbname = %s"
+    )
+    cols = ["dbname", "pageid", "title"]
+    res = []
+    try:
+        conn = connect_to_user_database(user_db_port)
+        with conn.cursor() as cur:
+            for _, elem in df.iterrows():
+                cur.execute(
+                    query, [elem["page_id"], elem["dbname"]]
+                )
+                res.append(cur.fetchall()[0])
+        df = pd.DataFrame(
+            res,
+            columns=cols
+            ).applymap(encode_if_necessary)
+
+        return df
+    except Exception as err:
+        print("Something went wrong. ", repr(err))

@@ -4,7 +4,9 @@ from flask_cors import CORS
 
 import pandas as pd
 
-from web.server_utils.database_connections import get_sourcecode_from_database, get_close_sourcecodes
+from web.server_utils.database_connections import get_sourcecode_from_database, \
+    get_close_sourcecodes, get_titles_and_filters
+from web.server_utils.scores_retrieval import get_score
 
 # configuration
 DEBUG = True
@@ -69,36 +71,20 @@ def get_requested_data():
     no_data = request.args.get('noData')
     chosen_families = request.args.getlist('chosenFamilies[]')
     # filter = request.args.get('filter', default='*', type=str)
-    print(no_data)
-    print(chosen_families)
+    weights = request.args.getlist('weights[]', type=float)
+    #print(no_data)
+    #print(chosen_families)
+    print(weights)
 
-    test_data = [
-        {
-            "pageid": 1,
-            "dbname": "enwiki",
-            "title": "A",
-            "sourcecode": "AAAAAAA",
+    df = get_score(weights=weights)
+    data = df[['page_id', 'dbname']].head(50)
+    data = get_titles_and_filters(data, 1147)
+    more_data = data.to_json(orient='index')
 
-        },
-        {
-            "pageid": 2,
-            "dbname": "ruwiki",
-            "title": "B",
-            "sourcecode": "BBBBB",
-
-        },
-        {
-            "pageid": 3,
-            "dbname": "enwiktionary ",
-            "title": "C",
-            "sourcecode": "CCCCCCCC",
-
-        },
-    ]
     # test_data = [1, 2, 3]
     return jsonify({
         'status': 'success',
-        'data': test_data
+        'data': more_data
     })
 
 

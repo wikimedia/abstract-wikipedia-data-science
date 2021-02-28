@@ -4,7 +4,7 @@
       <tr>
         <td>
           <div class="sidebar">
-            <badger-accordion :icons="true">
+            <badger-accordion>
               <badger-accordion-item>
                 <template slot="header">Choose wikipedia project families ▽</template>
                 <template slot="content">
@@ -50,12 +50,16 @@
 
 
     <div class="form-control">
-      <button class="button_submit" v-on:click="getFunctions">Request</button>
+      <button class="button_submit" v-on:click="getFunctions">
+        {{ requestButton }}</button>
     </div>
 
-    <ol>
-      <li v-for="(elem, index) in entries" :key="index"> {{ elem.dbname }} - {{ elem.title }}</li>
-    </ol>
+    <div class="return_results"><ol>
+      <li v-for="(elem, index) in entries" :key="index">
+        <a :href="`/${elem.dbname}/${elem.pageid}/`">
+              {{ elem.dbname }} - {{ elem.title }}</a>
+      </li>
+    </ol></div>
   </body>
 </template>
 
@@ -66,6 +70,8 @@
   export default {
     data(){
       return {
+        requestButton: "Request",
+
         features: [
           ["edits_per_editor_score", "Edits per editor score", 1],
           ["edits_per_day_score", "Edits per day score", 1],
@@ -79,14 +85,14 @@
         projectFamiliesCheckAll: false,
         projectFamiliesUncheckAll: true,
         projectFamilies: [
-          "Wikipedia",
-          "Wiktionary",
-          "Wikibooks",
-          "Wikiquote",
-          "Wikimedia",
-          "Wikinews",
-          "Wikiversity",
-          "Wikisource"
+          "wikipedia",
+          "wiktionary",
+          "wikibooks",
+          "wikiquote",
+          "wikimedia",
+          "wikinews",
+          "wikiversity",
+          "wikisource"
         ],
         checkedProjectFamilies: [],
         noDataModules: false,
@@ -105,23 +111,29 @@
     },
     methods: {
       getFunctions() {
+        const weights = []
+        this.features.forEach(([_0, _1, value]) =>
+            weights.push(value))
+
+        this.requestButton = "Loading..."
         axios.get('/api/data', {
           params: {
             chosenFamilies: this.checkedProjectFamilies,
-            noData: this.noDataModules
+            noData: this.noDataModules,
+            weights: weights,
           },
           paramsSerializer: params => {
             return qs.stringify(params, { arrayFormat: 'brackets' })
           },
         })
           .then(resp => {
-            alert('Request sent ' + resp.status);
-            console.log(resp.data.data);
-            this.entries = resp.data.data;
+            this.entries = JSON.parse(resp.data.data);
+            this.requestButton = "Request"
 
           })
           .catch(err => {
             alert('Request failed:'+ err);
+            this.requestButton = "Request"
           });
       },
       checkAllProjects: function () {
@@ -175,5 +187,9 @@
   .badger-accordion__header .js-badger-accordion-header .badger-accordion-toggle {
     font-family: Avenir, Helvetica, Arial, sans-serif;
     font-size: large !important;
+  }
+  .return_results {
+    text-align: left;
+    padding: 30px;
   }
 </style>
