@@ -50,11 +50,11 @@ def connect_to_user_database(user_db_port=None):
 
 def get_sourcecode_from_database(dbname, page_id, user_db_port=None):
     query = (
-        "select dbname, page_id, title, sourcecode "
+        "select dbname, page_id, title, sourcecode, cluster_wo_data "
         "from Scripts "
         "where dbname = %s and page_id = %s"
     )
-    cols = ["dbname", "pageid", "title", "sourcecode"]
+    cols = ["dbname", "pageid", "title", "sourcecode", "cluster"]
     df = None
     try:
         conn = connect_to_user_database(user_db_port)
@@ -66,6 +66,30 @@ def get_sourcecode_from_database(dbname, page_id, user_db_port=None):
                     res[0],
                     index=cols,
                 ).map(encode_if_necessary)
+
+            return df
+    except Exception as err:
+        print("Something went wrong. ", repr(err))
+
+
+def get_close_sourcecodes(dbname, page_id, cluster, user_db_port=None):
+    query = (
+        "select dbname, page_id, title "
+        "from Scripts "
+        "where cluster_wo_data = %s and page_id <> %s and dbname <> %s"
+    )
+    cols = ["dbname", "pageid", "title"]
+    df = None
+    try:
+        conn = connect_to_user_database(user_db_port)
+        with conn.cursor() as cur:
+            cur.execute(query, (cluster, page_id, dbname))
+            res = cur.fetchall()
+            if res:
+                df = pd.DataFrame(
+                    res,
+                    columns=cols,
+                ).applymap(encode_if_necessary)
 
             return df
     except Exception as err:
