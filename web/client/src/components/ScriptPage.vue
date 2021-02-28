@@ -14,7 +14,7 @@
         <div id="cluster_entries">
           Similar entries
           <div v-for='(elem, i) in script.similarItems' :key="i">
-            <a :href="`/#/${elem.dbname}/${elem.pageid}/`">
+            <a :href="`/${elem.dbname}/${elem.pageid}/`">
               {{ elem.dbname }}:{{ elem.title }}</a>
           </div>
         </div>
@@ -44,7 +44,7 @@
       loadData () {
         let dbname = this.$route.params.dbname;
         let pageid = this.$route.params.pageid;
-        axios.get('api/'+ dbname + '/' + pageid).then(resp => {
+        axios.get('http://127.0.0.1:5000/api/'+ dbname + '/' + pageid).then(resp => {
           if (resp.data.status == 'success') {
             this.script = JSON.parse(resp.data.data);
             this.script.similarItems = JSON.parse(resp.data.cluster);
