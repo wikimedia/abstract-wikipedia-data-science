@@ -110,7 +110,7 @@ We run these scripts as cronjobs. A list of all jobs set up for cron can be foun
 
 9. detect_similarity.py
 
-   Clusters similar modules together and stores cluster-ids in Scripts table in the `cluster` field. It also performs clustering only on non-data modules (`is_data` = 0) and stores cluster-ids in `cluster_wo_data` field. Clustering can be performed with word-embedding features with `-we` tag or document embedding. It uses OPTICS algorithm to perform clutering.
+   Clusters similar modules together and stores cluster-ids in Scripts table in the `cluster` field. It also performs clustering only on non-data modules (`is_data` = 0) and stores cluster-ids in `cluster_wo_data` field. Clustering can be performed with word-embedding features with `-we` tag or document embedding. It uses OPTICS algorithm to perform clustering.
 
 10. get_pageviews.py
 
