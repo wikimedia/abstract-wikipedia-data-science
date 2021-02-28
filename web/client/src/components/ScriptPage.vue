@@ -75,4 +75,8 @@
     text-align: left;
     padding: 20px;
   }
+  td {
+    vertical-align: top;
+    padding: 20px;
+  }
 </style>
