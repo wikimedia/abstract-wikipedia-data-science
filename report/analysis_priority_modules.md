@@ -75,7 +75,7 @@ For each page we collect the total number of unique logged-in editors till date.
 </p>
 
 Since the size of each wiki is different, the numbers of editors, edits etc determines the importance different wikis at different levels, it is not a good idea to compare enwiki with a very small wiki for example. So we calculate the normalized version of the edits.
-After normalization by database the 99th quantile is ~0.4, i.e **99% of the pages have edits less than 0.4% of the total number of edits in that respective project**. In this case 5% seems like a nice cutoff, pages with more than 5% editors can be considered quite imporatant.
+After normalization by database the 99th quantile is ~0.4, i.e **99% of the pages have edits less than 0.4% of the total number of edits in that respective project**. In this case 5% seems like a nice cutoff, pages with more than 5% editors can be considered quite important.
 
 ![](img/editors_norm_hist_lg.png)
 
