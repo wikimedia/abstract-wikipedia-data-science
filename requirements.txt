@@ -5,3 +5,6 @@ PyMySQL
 numpy
 sklearn
 gensim
+Flask
+Flask-CORS
+requests
