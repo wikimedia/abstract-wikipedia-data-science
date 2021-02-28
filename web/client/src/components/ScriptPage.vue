@@ -63,9 +63,6 @@
     mounted() {
       this.loadData();
     },
-    updated() {
-      this.loadData();
-    }
   }
 </script>
 

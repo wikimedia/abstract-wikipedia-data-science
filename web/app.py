@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 import pandas as pd
@@ -24,9 +24,9 @@ CORS(app)
 
 
 # Main route, serve the web page, where you will import the js and css built files
-#@app.route('/')
-#def index():
-#    return send_from_directory(static_file_dir, 'index.html')
+@app.route('/')
+def index():
+    return send_from_directory(static_file_dir, 'index.html')
 
 
 # sanity check route
