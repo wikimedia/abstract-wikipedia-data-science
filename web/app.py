@@ -6,7 +6,7 @@ import pandas as pd
 
 from web.server_utils.database_connections import get_sourcecode_from_database, \
     get_close_sourcecodes, get_titles_and_filters
-from web.server_utils.scores_retrieval import get_score
+from web.server_utils.scores_retrieval import get_score, filter_families
 
 # configuration
 DEBUG = True
@@ -70,13 +70,10 @@ def get_single_script_data(wiki, id):
 def get_requested_data():
     no_data = request.args.get('noData')
     chosen_families = request.args.getlist('chosenFamilies[]')
-    # filter = request.args.get('filter', default='*', type=str)
     weights = request.args.getlist('weights[]', type=float)
-    #print(no_data)
-    #print(chosen_families)
-    print(weights)
 
     df = get_score(weights=weights)
+    df = filter_families(df, chosen_families)
     data = df[['page_id', 'dbname']].head(50)
     data = get_titles_and_filters(data, 1147)
     more_data = data.to_json(orient='index')

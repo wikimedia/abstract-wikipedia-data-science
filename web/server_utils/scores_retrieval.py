@@ -1,12 +1,28 @@
 import pandas as pd
 import sys
 from pathlib import Path
+import re
 
 
 def filter_families(df, families_list):
     if "wikipedia" in families_list:
-        families_list = families_list.remove("wikipedia")
-        families_list.push("wiki")
+        families_list.append("wiki")
+        families_list.remove("wikipedia")
+
+    to_drop = []
+    for i in range(df.shape[0]):
+        found = False
+        curr_dbname = df.loc[i, 'dbname']
+        for elem in families_list:
+            check_entry = re.match(r"\S+" + elem + "$", curr_dbname)
+            if check_entry:
+                found = True
+                break
+        if not found:
+            to_drop.append(i)
+
+    df = df.drop(to_drop, axis=0)
+    return df
 
 
 
