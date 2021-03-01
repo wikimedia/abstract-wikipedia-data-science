@@ -25,6 +25,8 @@ def filter_families(df, families_list):
     return df
 
 
+def filter_data_modules(df):
+    return df
 
 
 def get_score(
