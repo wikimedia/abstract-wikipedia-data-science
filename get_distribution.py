@@ -12,6 +12,7 @@ def get_data(feature_names, user_db_port, user, password):
     """
     Collects data from Scripts table, columns include column names in feature names
     and additionally 'edits per editor' and 'edits per day' are calculated.
+    Adds 'is_data' column for usage specific to webservice.
 
     :param feature_names: List of features whose scores are to be calculated
     :param user_db_port: Port for connecting to local Sources table through ssh tunneling, if used.
@@ -29,11 +30,12 @@ def get_data(feature_names, user_db_port, user, password):
         cols.remove("major_edits")
         cols += ["minor_edits"]
 
-    cols += ["page_id", "dbname", "first_edit", "last_edit"]
+    cols += ["page_id", "dbname", "is_data", "first_edit", "last_edit"]
 
     query = "SELECT " + ",".join(cols) + " FROM Scripts"
 
-    conn = db_acc.connect_to_user_database(DATABASE_NAME, user_db_port, user, password)
+    conn = db_acc.connect_to_user_database(
+        DATABASE_NAME, user_db_port, user, password)
     with conn.cursor() as cur:
         cur.execute(query)
         df = pd.DataFrame(
@@ -52,7 +54,8 @@ def get_data(feature_names, user_db_port, user, password):
         df["major_edits"] = df["edits"] - df["minor_edits"]
 
     return df[
-        ["page_id", "dbname", "edits_per_editor", "edits_per_day"] + feature_names
+        ["page_id", "dbname", "is_data", "edits_per_editor",
+            "edits_per_day"] + feature_names
     ]
 
 
@@ -139,7 +142,7 @@ def get_multipliers(df, threshold=0.87):
 
         for x in np.arange(1, 0, -0.01):
             val = which_percentile(v, df[df[k] >= x * v][k])
-            ## The values should be the maximum number below the thereshold
+            # The values should be the maximum number below the thereshold
             if val > threshold:
                 break
             req_val = x
@@ -160,7 +163,7 @@ def get_distribution(df, limits_num, limits_perc):
     :return: DataFrame
     """
     for k in df.columns:
-        if k == "page_id" or k == "dbname":
+        if k == "page_id" or k == "dbname" or k == "is_data":
             continue
         v = limits_num[k]
         p = limits_perc[k]
@@ -194,7 +197,7 @@ def get_score(
     if (len(feature_names)) != len(weights):
         sys.exit("Number of features is not equal to the number of weights!")
     df = pd.read_csv("data_distribution.csv")
-    weights = [w / sum(weights) for w in weights]  ## Normalize weights
+    weights = [w / sum(weights) for w in weights]  # Normalize weights
     df["score"] = df[feature_names].dot(weights)
     return df
 
@@ -215,7 +218,8 @@ if __name__ == "__main__":
         help="Name of the features(columns in Scripts table) to get distribution of."
         "Possible values are editors, edits, major_edits, anonymous_edits, pls, categories, langs,"
         "transcluded_in, transclusions, length, pageviews.",
-        default=["editors", "major_edits", "length", "pls", "langs", "transcluded_in"],
+        default=["editors", "major_edits", "length",
+                 "pls", "langs", "transcluded_in"],
     )
     local_data = parser.add_argument_group(
         title="Info for connecting to Toolforge from local pc"
@@ -240,7 +244,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    df = get_data(args.feature_names, args.user_db_port, args.user, args.password)
+    df = get_data(args.feature_names, args.user_db_port,
+                  args.user, args.password)
     df = normalize(df)
     limits_num, limits_perc = get_multipliers(df)
     df = get_distribution(df, limits_num, limits_perc)
