@@ -2,8 +2,6 @@ import os
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
-import pandas as pd
-
 from server_utils.database_connections import *
 from server_utils.scores_retrieval import get_score, filter_families, filter_data_modules
 
@@ -15,8 +13,8 @@ static_file_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'cli
 
 # instantiate the app
 app = Flask(__name__,
-            # static_url_path='',
-            # static_folder=static_file_dir,
+            static_url_path='',
+            static_folder=static_file_dir,
             )
 app.config.from_object(__name__)
 # app.database_linkage = get_language_family_linkage(1148)
@@ -28,6 +26,11 @@ CORS(app)
 # Main route, serve the web page, where you will import the js and css built files
 @app.route('/')
 def index():
+    return send_from_directory(static_file_dir, 'index.html')
+
+
+@app.route('/script/<wiki>/<id>/')
+def script_page(wiki, id):
     return send_from_directory(static_file_dir, 'index.html')
 
 

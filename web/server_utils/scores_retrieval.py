@@ -61,7 +61,6 @@ def filter_families_with_linkage(df, linkage_df, chosen_families_list):
 
 
 def filter_data_modules(df):
-    print(df.loc[df['is_data'] == 0])
     return df.loc[df['is_data'] == 0]
 
 

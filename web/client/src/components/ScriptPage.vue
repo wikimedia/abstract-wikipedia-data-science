@@ -14,7 +14,7 @@
         <div id="cluster_entries">
           Similar entries
           <div v-for='(elem, i) in script.similarItems' :key="i">
-            <a :href="`/${elem.dbname}/${elem.pageid}/`">
+            <a :href="`/script/${elem.dbname}/${elem.pageid}/`">
               {{ elem.dbname }} - {{ elem.title }}</a>
           </div>
         </div>

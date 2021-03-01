@@ -56,7 +56,7 @@
 
     <div class="return_results"><ol>
       <li v-for="(elem, index) in entries" :key="index">
-        <a :href="`/${elem.dbname}/${elem.pageid}/`">
+        <a :href="`/script/${elem.dbname}/${elem.pageid}/`">
               {{ elem.dbname }} - {{ elem.title }}</a>
       </li>
     </ol></div>

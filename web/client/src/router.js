@@ -22,7 +22,7 @@ export default new Router({
       component: Sidebar,
     },
     {
-      path: "/:dbname/:pageid",
+      path: "/script/:dbname/:pageid",
       name: "ScriptPage",
       component: ScriptPage,
     },
