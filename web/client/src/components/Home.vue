@@ -92,8 +92,13 @@
           "wikimedia",
           "wikinews",
           "wikiversity",
-          "wikisource"
+          "wikisource",
+          "special",
+          "wikidata",
+          "wikimania",
+          "wikivoyage"
         ],
+
         checkedProjectFamilies: [],
         noDataModules: false,
 

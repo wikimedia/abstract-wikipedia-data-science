@@ -84,18 +84,17 @@ def connect_to_replicas_database(db_name, replicas_port=None):
 def get_language_family_linkage(replicas_port=None):
     query = (
         "select dbname, lang, family "
-        "from Scripts "
+        "from wiki "
         "where is_closed = 0"
     )
     cols = ["dbname", "lang", "family"]
-    df = None
     try:
         conn = connect_to_replicas_database('meta', replicas_port)
         with conn.cursor() as cur:
             cur.execute(query)
-            df = pd.Series(
-                cur.fetchall()[0],
-                index=cols,
+            df = pd.DataFrame(
+                cur.fetchall(),
+                columns=cols,
             )
 
             return df

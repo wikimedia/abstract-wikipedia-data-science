@@ -4,8 +4,7 @@ from flask_cors import CORS
 
 import pandas as pd
 
-from server_utils.database_connections import get_sourcecode_from_database, \
-    get_close_sourcecodes, get_titles_and_filters
+from server_utils.database_connections import *
 from server_utils.scores_retrieval import get_score, filter_families, filter_data_modules
 
 # configuration
@@ -20,6 +19,7 @@ app = Flask(__name__,
             # static_folder=static_file_dir,
             )
 app.config.from_object(__name__)
+# app.database_linkage = get_language_family_linkage(1148)
 
 # enable CORS
 CORS(app)
@@ -63,9 +63,10 @@ def get_requested_data():
     weights = request.args.getlist('weights[]', type=float)
 
     df = get_score(weights=weights)
+
+    df = filter_families(df, chosen_families)
     if no_data:
         df = filter_data_modules(df)
-    df = filter_families(df, chosen_families)
     data = df[['page_id', 'dbname']].head(50)
     data = get_titles_and_filters(data, 1147)
     more_data = data.to_json(orient='index')
