@@ -1,9 +1,0 @@
-Flask
-Flask-CORS
-requests
-PyMySQL
-toolforge
-PyYAML
-pandas
-numpy
-mwapi
