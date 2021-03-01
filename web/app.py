@@ -4,9 +4,9 @@ from flask_cors import CORS
 
 import pandas as pd
 
-from web.server_utils.database_connections import get_sourcecode_from_database, \
+from server_utils.database_connections import get_sourcecode_from_database, \
     get_close_sourcecodes, get_titles_and_filters
-from web.server_utils.scores_retrieval import get_score, filter_families
+from server_utils.scores_retrieval import get_score, filter_families
 
 # configuration
 DEBUG = True
@@ -46,19 +46,9 @@ def get_single_script_data(wiki, id):
             'status': 'NotFound',
         })
     else:
-        #cluster = get_close_sourcecodes(wiki, id, ser.loc['cluster'], 1147)
-        test_vals = [
-            ["kawiki", 376136, "მოდული:No globals"],
-            ["bnwiki", 437245, "মডিউল:ক্রীড়া ছক/জয়-ড্র-হার "],
-            ["enwiktionary", 5366907, "Module:Lydi-translit/testcases"],
-            ["sowiki", 19126, "Module:WeatherBoxColors"],
-            ["afwiktionary", 32943, "Module:redlink category"],
-            ["fjwiki", 8468, "Module:String"],
-        ]
-        cluster = pd.DataFrame(test_vals, columns=["dbname", "pageid", "title"])
+        cluster = get_close_sourcecodes(wiki, id, ser.loc['cluster'], 1147, additional_step=0)
         if cluster is not None:
             cluster = cluster.to_json(orient='index')
-            print(cluster)
         return jsonify({
             'status': 'success',
             'data': ser.to_json(),

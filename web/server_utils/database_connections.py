@@ -72,24 +72,26 @@ def get_sourcecode_from_database(dbname, page_id, user_db_port=None):
         print("Something went wrong. ", repr(err))
 
 
-def get_close_sourcecodes(dbname, page_id, cluster, user_db_port=None):
+def get_close_sourcecodes(dbname, page_id, cluster, user_db_port=None, additional_step=0.5):
     query = (
         "select dbname, page_id, title "
         "from Scripts "
-        "where cluster_wo_data = %s and page_id <> %s and dbname <> %s"
+        "where cluster_wo_data <= %s and cluster_wo_data >= %s "
     )
     cols = ["dbname", "pageid", "title"]
     df = None
     try:
         conn = connect_to_user_database(user_db_port)
         with conn.cursor() as cur:
-            cur.execute(query, (cluster, page_id, dbname))
+            cur.execute(query, (cluster+additional_step, cluster-additional_step))
             res = cur.fetchall()
             if res:
                 df = pd.DataFrame(
                     res,
                     columns=cols,
                 ).applymap(encode_if_necessary)
+                curr_index = df[(df['dbname'] == dbname) & (df['pageid'] == int(page_id))].index
+                df.drop(curr_index, inplace=True)
 
             return df
     except Exception as err:
