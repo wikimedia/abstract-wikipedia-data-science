@@ -24,7 +24,7 @@
 0 0 * * 7 jsub -N get_dist -mem 1024m -once -quiet abstract-wikipedia-data-science/shell_scripts/py_script.sh get_distribution.py
 
 0 1 * * 7 jsub -N similarity -mem 5000m -once -quiet abstract-wikipedia-data-science/shell_scripts/py_script.sh detect_similarity.py -tr -we -d
-0 1 * * 8 jsub -N similarity -mem 5000m -once -quiet abstract-wikipedia-data-science/shell_scripts/py_script.sh detect_similarity.py -we
+0 1 * * 1 jsub -N similarity -mem 5000m -once -quiet abstract-wikipedia-data-science/shell_scripts/py_script.sh detect_similarity.py -we
 
 0 3 1 * * jsub -N pgview -once -quiet abstract-wikipedia-data-science/shell_scripts/py_script.sh get_pageviews.py
 
