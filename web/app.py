@@ -42,14 +42,14 @@ def ping_pong():
 
 @app.route('/api/<wiki>/<id>')
 def get_single_script_data(wiki, id):
-    ser = get_sourcecode_from_database(wiki, id, 1147)
+    ser = get_sourcecode_from_database(wiki, id)
 
     if ser is None:
         return jsonify({
             'status': 'NotFound',
         })
     else:
-        cluster = get_close_sourcecodes(wiki, id, ser.loc['cluster'], 1147, additional_step=0)
+        cluster = get_close_sourcecodes(wiki, id, ser.loc['cluster'], additional_step=0)
         if cluster is not None:
             cluster = cluster.to_json(orient='index')
         return jsonify({
@@ -71,7 +71,7 @@ def get_requested_data():
     if no_data:
         df = filter_data_modules(df)
     data = df[['page_id', 'dbname']].head(50)
-    data = get_titles_and_filters(data, 1147)
+    data = get_titles_and_filters(data)
     more_data = data.to_json(orient='index')
 
     # test_data = [1, 2, 3]
