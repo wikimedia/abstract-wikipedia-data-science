@@ -48,6 +48,62 @@ def connect_to_user_database(user_db_port=None):
         exit(1)
 
 
+def connect_to_replicas_database(db_name, replicas_port=None):
+    """
+    Establishes connection to Wikimedia replicas database in Toolforge.
+    :param db_name: name of the database
+    :param replicas_port: port for connecting to db through ssh tunneling, if used
+    :return: pymysql.connection to the database
+    """
+    try:
+        if replicas_port:
+            conn = pymysql.connect(
+                host="127.0.0.1",
+                port=replicas_port,
+                user=cfg['user_credits']['user'],
+                password=cfg['user_credits']['password'],
+                connect_timeout=1000,
+            )
+            if db_name[-2:] != "_p":
+                db_name = db_name + "_p"
+            with conn.cursor() as cur:
+                cur.execute("use " + db_name)
+            conn.commit()
+        else:
+            conn = toolforge.connect(
+                dbname=db_name, connect_timeout=1000, cluster="analytics"
+            )
+
+        return conn
+    except pymysql.err.OperationalError as err:
+        print("Failure: Please establish connection to Toolforge")
+        print("Error: ", err)
+        exit(1)
+
+
+def get_language_family_linkage(replicas_port=None):
+    query = (
+        "select dbname, lang, family "
+        "from Scripts "
+        "where is_closed = 0"
+    )
+    cols = ["dbname", "lang", "family"]
+    df = None
+    try:
+        conn = connect_to_replicas_database('meta', replicas_port)
+        with conn.cursor() as cur:
+            cur.execute(query)
+            df = pd.Series(
+                cur.fetchall()[0],
+                index=cols,
+            )
+
+            return df
+    except Exception as err:
+        print("Something went wrong. ", repr(err))
+
+
+
 def get_sourcecode_from_database(dbname, page_id, user_db_port=None):
     query = (
         "select dbname, page_id, title, sourcecode, cluster_wo_data "
