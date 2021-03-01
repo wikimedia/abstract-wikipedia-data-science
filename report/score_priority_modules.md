@@ -18,7 +18,7 @@ Note that these values are later normalized by wiki. So `trancluded_in = traincl
 
 ## 2. Modify distribution
 
-Now that we got our limit value it's time to calculate scores. Each feature would be one component of the score. To normalize and turn raw values to scores we modify the original distribution of the features such that the limit we determined is somewhere below `87%`. Originally the limit would be at the 99.999999....th percentile, that way there is no way we can dig out important modules. The result of modifying the distribution is that we give less importance to modules that have _very_ less values (0-10 for most features), and that's okay for us since we are aiming _high_.
+Now that we got our limit value it's time to calculate scores. Each feature would be one component of the score. To normalize and turn raw values to scores we modify the original distribution of the features such that the limit we determined is somewhere below `95%`. Originally the limit would be at the 99.999999....th percentile, that way there is no way we can dig out important modules. The result of modifying the distribution is that we give less importance to modules that have _very_ less values (0-10 for most features), and that's okay for us since we are aiming _high_.
 
 We change distribution using the following formula: `feature = feature[feature>limit*multiplier]`. The multiplier is a value `(0,1]` whichever gives the max value for the percentage. Below is the distribution before and after modification.
 

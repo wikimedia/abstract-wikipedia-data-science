@@ -97,7 +97,7 @@ def which_percentile(value, d):
     return sum(d < value) / len(d)
 
 
-def get_multipliers(df, threshold=0.87):
+def get_multipliers(df, threshold=0.95):
     """
     Alters distribution of each column in df such that the heuristic values in
     'limits_num' dictionary is the 'threshold' percentile or less. This ensures
