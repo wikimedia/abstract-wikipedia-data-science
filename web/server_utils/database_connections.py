@@ -99,7 +99,7 @@ def get_language_family_linkage(replicas_port=None):
                 columns=cols,
             )
             from pathlib import Path
-            path = str(Path.home()) + '/abstract-wikipedia-data-science/web/client/public/'
+            path = str(Path.home()) + '/www/python/src/client/public/'
             save_column_to_json(df, 'family', 'family.json', path)
             save_column_to_json(df, 'lang', 'lang.json', path)
             return df
