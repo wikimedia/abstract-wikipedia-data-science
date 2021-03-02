@@ -63,8 +63,8 @@ def get_single_script_data(wiki, id):
 @app.route('/api/data', methods=['GET'])
 def get_requested_data():
     no_data = request.args.get('noData')
-    chosen_families = request.args.getlist('chosenFamilies[]')
-    chosen_langs = request.args.getlist('chosenLangs[]')
+    chosen_families = request.args.getlist('fams[]')
+    chosen_langs = request.args.getlist('langs[]')
     weights = request.args.getlist('weights[]', type=float)
 
     df = get_score(weights=weights)

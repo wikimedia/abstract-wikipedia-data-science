@@ -147,8 +147,8 @@
         this.requestButton = "Loading..."
         axios.get('/api/data', {
           params: {
-            chosenFamilies: this.checkedProjectFamilies,
-            chosenLangs: this.checkedLanguages,
+            fams: this.checkedProjectFamilies,
+            langs: this.checkedLanguages,
             noData: this.noDataModules,
             weights: weights,
           },
