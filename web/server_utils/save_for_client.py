@@ -4,4 +4,4 @@ def save_column_to_json(df, column, filename, folder_path):
 
     fullpath = folder_path + filename
     with open(fullpath, 'w', encoding='utf-8') as f:
-        json.dump(col_values, f, ensure_ascii=False, indent=2)
+        json.dump(sorted(col_values), f, ensure_ascii=False, indent=2)

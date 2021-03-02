@@ -28,15 +28,21 @@
                 <template slot="header">Choose wikipedia project languages ▽</template>
                 <template slot="content">
                   <div id="wiki-langs">
-                  <!-- Checkboxes list -->
+                  <!-- Checkboxes list
                     <div v-for='elem in projectLanguages' :key="elem">
                     <input type='checkbox' v-bind:value='elem' v-model='checkedLanguages'
                          @change='updateCheckallLangs()'> {{ elem }}
+                    </div>-->
+                    <div v-for='i in this.rowCount' :key="i">
+                      <span v-for="elem in projectLanguages.slice((i-1) * 5, i * 5)" :key='elem'>
+                        <input type='checkbox' v-bind:value='elem' v-model='checkedLanguages'
+                         @change='updateCheckallLangs()'> {{ elem }}
+                      </span>
                     </div>
                   <!-- Check All -->
                     <input type='checkbox' @click='checkAllLangs()'
                        v-model='projectLangsCheckAll' :disabled="projectLangsCheckAll == 1"> Check All
-                    <input type='checkbox' @click='uncheckAllProjects()'
+                    <input type='checkbox' @click='uncheckAllLangs()'
                        v-model='projectLangsUncheckAll' :disabled="projectLangsUncheckAll == 1"> Uncheck All
                     <br />
                   </div>
@@ -89,6 +95,11 @@
   import families from '../../public/family.json'
   import languages from '../../public/lang.json'
   export default {
+    computed: {
+      rowCount() {
+        return Math.ceil(this.projectLanguages.length / 5);
+      }
+    },
     data(){
       return {
         requestButton: "Request",
@@ -137,6 +148,7 @@
         axios.get('/api/data', {
           params: {
             chosenFamilies: this.checkedProjectFamilies,
+            chosenLangs: this.checkedLanguages,
             noData: this.noDataModules,
             weights: weights,
           },
@@ -229,7 +241,7 @@
     background-color: lightcyan;
     min-height: 100%;
   }
-  div#wiki-families, div#data-modules {
+  div#wiki-families, div#wiki-langs, div#data-modules {
     text-align: left;
   }
   .badger-accordion__header .js-badger-accordion-header .badger-accordion-toggle {

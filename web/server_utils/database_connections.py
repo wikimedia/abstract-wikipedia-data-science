@@ -4,6 +4,8 @@ import yaml
 import pandas as pd
 import numpy as np
 
+from server_utils.save_for_client import save_column_to_json
+
 with open("config.yml", 'r') as ymlfile:
     cfg = yaml.safe_load(ymlfile)
 
@@ -96,7 +98,10 @@ def get_language_family_linkage(replicas_port=None):
                 cur.fetchall(),
                 columns=cols,
             )
-
+            from pathlib import Path
+            path = str(Path.home()) + '/abstract-wikipedia-data-science/web/client/public/'
+            save_column_to_json(df, 'family', 'family.json', path)
+            save_column_to_json(df, 'lang', 'lang.json', path)
             return df
     except Exception as err:
         print("Something went wrong. ", repr(err))
