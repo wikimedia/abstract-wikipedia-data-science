@@ -145,10 +145,14 @@
             weights.push(value))
 
         this.requestButton = "Loading..."
+        let langs = this.checkedLanguages;
+        if (this.checkedLanguages.length == this.projectLanguages.length){
+          langs = ['all']
+        }
         axios.get('/api/data', {
           params: {
             fams: this.checkedProjectFamilies,
-            langs: this.checkedLanguages,
+            langs: langs,
             noData: this.noDataModules,
             weights: weights,
           },

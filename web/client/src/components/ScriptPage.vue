@@ -1,10 +1,10 @@
 <template>
   <body>
     <div class="script_title">
-      {{ script.title }}
+      <h3>{{ script.title }}</h3>
     </div>
     <div class="script_identity">
-      From {{ script.dbname }}: page id {{ script.pageid }}
+      <h4>From {{ script.dbname }}: page id {{ script.pageid }} </h4>
     </div>
     <table> <tr>
       <td>

@@ -69,7 +69,11 @@ def get_requested_data():
 
     df = get_score(weights=weights)
     df = filter_families_with_linkage(df, app.database_linkage, chosen_families)
-    df = filter_languages_with_linkage(df, app.database_linkage, chosen_langs)
+    if chosen_langs:
+        if chosen_langs[0] != 'all':
+            df = filter_languages_with_linkage(df, app.database_linkage, chosen_langs)
+    else:
+        df = filter_languages_with_linkage(df, app.database_linkage, chosen_langs)
     if no_data:
         df = filter_data_modules(df)
     data = df[['page_id', 'dbname']].head(50)
