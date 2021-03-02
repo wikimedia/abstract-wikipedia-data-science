@@ -44,7 +44,7 @@
       loadData () {
         let dbname = this.$route.params.dbname;
         let pageid = this.$route.params.pageid;
-        axios.get('http://127.0.0.1:5000/api/'+ dbname + '/' + pageid).then(resp => {
+        axios.get('/api/'+ dbname + '/' + pageid).then(resp => {
           if (resp.data.status == 'success') {
             this.script = JSON.parse(resp.data.data);
             this.script.similarItems = JSON.parse(resp.data.cluster);
