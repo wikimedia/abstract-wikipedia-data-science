@@ -25,6 +25,25 @@
               </badger-accordion-item>
 
               <badger-accordion-item>
+                <template slot="header">Choose wikipedia project languages ▽</template>
+                <template slot="content">
+                  <div id="wiki-langs">
+                  <!-- Checkboxes list -->
+                    <div v-for='elem in projectLanguages' :key="elem">
+                    <input type='checkbox' v-bind:value='elem' v-model='checkedLanguages'
+                         @change='updateCheckallLangs()'> {{ elem }}
+                    </div>
+                  <!-- Check All -->
+                    <input type='checkbox' @click='checkAllLangs()'
+                       v-model='projectLangsCheckAll' :disabled="projectLangsCheckAll == 1"> Check All
+                    <input type='checkbox' @click='uncheckAllProjects()'
+                       v-model='projectLangsUncheckAll' :disabled="projectLangsUncheckAll == 1"> Uncheck All
+                    <br />
+                  </div>
+                </template>
+              </badger-accordion-item>
+
+              <badger-accordion-item>
                 <template slot="header">Choose whether to work with data modules ▽</template>
                 <template slot="content">
                   <div id="data-modules">
@@ -67,6 +86,8 @@
   import {BadgerAccordion, BadgerAccordionItem} from "vue-badger-accordion";
   import axios from "axios";
   import qs from "qs";
+  import families from '../../public/family.json'
+  import languages from '../../public/lang.json'
   export default {
     data(){
       return {
@@ -84,22 +105,13 @@
         ],
         projectFamiliesCheckAll: false,
         projectFamiliesUncheckAll: true,
-        projectFamilies: [
-          "wikipedia",
-          "wiktionary",
-          "wikibooks",
-          "wikiquote",
-          "wikimedia",
-          "wikinews",
-          "wikiversity",
-          "wikisource",
-          "special",
-          "wikidata",
-          "wikimania",
-          "wikivoyage"
-        ],
+        projectLangsCheckAll: false,
+        projectLangsUncheckAll: true,
+        projectFamilies: families,
+        projectLanguages: languages,
 
         checkedProjectFamilies: [],
+        checkedLanguages: [],
         noDataModules: false,
 
         entries:[]
@@ -107,7 +119,8 @@
     },
     mounted: function () {
       this.$nextTick(function () {
-        this.checkAllProjects()
+        this.checkAllProjects();
+        this.checkAllLangs();
       })
     },
     components: {
@@ -168,6 +181,36 @@
           this.projectFamiliesUncheckAll = true;
         } else {
           this.projectFamiliesUncheckAll = false;
+        }
+      },
+
+      checkAllLangs: function () {
+        this.projectLangsCheckAll = !this.projectLangsCheckAll;
+        this.checkedLanguages = []; // Check all
+        for (let key in this.projectLanguages) {
+          this.checkedLanguages.push(this.projectLanguages[key ]);
+        }
+        if (this.projectLangsUncheckAll === true) {
+          this.projectLangsUncheckAll = !this.projectLangsUncheckAll;
+        }
+      },
+      uncheckAllLangs: function () {
+        this.projectLangsUncheckAll = !this.projectLangsUncheckAll;
+        this.checkedLanguages = [];
+        if (this.projectLangsCheckAll === true) {
+          this.projectLangsCheckAll = !this.projectLangsCheckAll;
+        }
+      },
+      updateCheckallLangs: function () {
+        if (this.projectLanguages.length == this.checkedLanguages.length) {
+          this.projectLangsCheckAll = true;
+        } else {
+          this.projectLangsCheckAll = false;
+        }
+        if (this.checkedLanguages.length == 0) {
+          this.projectLangsUncheckAll = true;
+        } else {
+          this.projectLangsUncheckAll = false;
         }
       },
     }

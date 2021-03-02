@@ -49,14 +49,14 @@ def filter_families(df, families_list):
 
 
 def filter_families_with_linkage(df, linkage_df, chosen_families_list):
-    to_drop = []
-    for i in range(df.shape[0]):
-        curr_dbname = df.loc[i, 'dbname']
-        curr_family = linkage_df[(linkage_df['dbname'] == curr_dbname)]['family'].tolist()
-        if curr_family[0] not in chosen_families_list:
-            to_drop.append(i)
+    dbs = linkage_df[linkage_df['family'].isin(chosen_families_list)]['dbname']
+    df = df[df['dbname'].isin(dbs)]
+    return df
 
-    df = df.drop(to_drop, axis=0)
+
+def filter_languages_with_linkage(df, linkage_df, chosen_langs_list):
+    dbs = linkage_df[linkage_df['lang'].isin(chosen_langs_list)]['dbname']
+    df = df[df['dbname'].isin(dbs)]
     return df
 
 
