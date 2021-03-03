@@ -6,9 +6,10 @@ import numpy as np
 
 from server_utils.save_for_client import save_column_to_json
 
+# for successfully establishing connection to the databases, write your username, password
+# and user's database name into config.yml
 with open("config.yml", 'r') as ymlfile:
     cfg = yaml.safe_load(ymlfile)
-
 
 pymysql.converters.encoders[np.int64] = pymysql.converters.escape_int
 pymysql.converters.conversions = pymysql.converters.encoders.copy()
@@ -25,8 +26,8 @@ def encode_if_necessary(b):
 def connect_to_user_database(user_db_port=None):
     """
     Establishes connection to database, created by user, in Toolforge.
-    :param user_db_port: port for connecting to db through ssh tunneling, if used
-    :return: pymysql.connection to the database
+    :param user_db_port: port for connecting to db through ssh tunneling, if used.
+    :return: pymysql.connection to the database.
     """
     try:
         if user_db_port:
@@ -53,9 +54,9 @@ def connect_to_user_database(user_db_port=None):
 def connect_to_replicas_database(db_name, replicas_port=None):
     """
     Establishes connection to Wikimedia replicas database in Toolforge.
-    :param db_name: name of the database
-    :param replicas_port: port for connecting to db through ssh tunneling, if used
-    :return: pymysql.connection to the database
+    :param db_name: name of the database.
+    :param replicas_port: port for connecting to db through ssh tunneling, if used.
+    :return: pymysql.connection to the database.
     """
     try:
         if replicas_port:
@@ -84,6 +85,14 @@ def connect_to_replicas_database(db_name, replicas_port=None):
 
 
 def get_language_family_linkage(replicas_port=None):
+    """
+    Connects to meta table in database replicas and fetches the information
+    how dbnames, language of the wiki and project family are linked.
+    Additionally, lists of all possible project families and all used languages
+    are saved to json files for frontend to use.
+    :param replicas_port: port for connecting to meta db through ssh tunneling, if used
+    :return: pandas.DataFrame.
+    """
     query = (
         "select dbname, lang, family "
         "from wiki "
@@ -107,10 +116,17 @@ def get_language_family_linkage(replicas_port=None):
         print("Something went wrong. ", repr(err))
 
 
-
 def get_sourcecode_from_database(dbname, page_id, user_db_port=None):
+    """
+    Fetches from user's database title, sourcecode and cluster of the script,
+    set by its page ID and database name.
+    :param dbname: name of the database, from which the processed script was fetched.
+    :param page_id: page ID of this page on this database.
+    :param user_db_port: port for connecting to db through ssh tunneling, if used.
+    :return: pandas.Series.
+    """
     query = (
-        "select dbname, page_id, title, sourcecode, cluster_wo_data "
+        "select dbname, page_id, title, sourcecode, cluster "
         "from Scripts "
         "where dbname = %s and page_id = %s"
     )
@@ -132,18 +148,29 @@ def get_sourcecode_from_database(dbname, page_id, user_db_port=None):
         print("Something went wrong. ", repr(err))
 
 
-def get_close_sourcecodes(dbname, page_id, cluster, user_db_port=None, additional_step=0.5):
+def get_close_sourcecodes(dbname, page_id, cluster, user_db_port=None, eps=0):
+    """
+    Fetches information on the scripts, which are considered to be in the same cluster as checked entry
+    or in the close ones.
+    :param dbname: name of the database, from which the processed script was fetched.
+    :param page_id: page ID of this page on this database.
+    :param cluster: cluster number of the processed script.
+    :param user_db_port: port for connecting to db through ssh tunneling, if used.
+    :param eps: used for querying not only for the same cluster, but also for the close ones,
+    so the function will return info on scripts, where cluster number is in [cluster-eps, cluster+eps]
+    :return: pandas.DataFrame.
+    """
     query = (
         "select dbname, page_id, title "
         "from Scripts "
-        "where cluster_wo_data <= %s and cluster_wo_data >= %s "
+        "where cluster <= %s and cluster >= %s "
     )
     cols = ["dbname", "pageid", "title"]
     df = None
     try:
         conn = connect_to_user_database(user_db_port)
         with conn.cursor() as cur:
-            cur.execute(query, (cluster+additional_step, cluster-additional_step))
+            cur.execute(query, (cluster + eps, cluster - eps))
             res = cur.fetchall()
             if res:
                 df = pd.DataFrame(
@@ -158,7 +185,13 @@ def get_close_sourcecodes(dbname, page_id, cluster, user_db_port=None, additiona
         print("Something went wrong. ", repr(err))
 
 
-def get_titles_and_filters(df, user_db_port=None):
+def get_scripts_titles(df, user_db_port=None):
+    """
+    Fetches page titles for the scripts, whose info is stored ino the dataframe.
+    :param df: pandas.DataFrame, containing page IDs and dbnames for scripts we want the titles of.
+    :param user_db_port: port for connecting to db through ssh tunneling, if used.
+    :return: pandas.DataFrame
+    """
     query = (
         "select dbname, page_id, title "
         "from Scripts "
@@ -177,7 +210,7 @@ def get_titles_and_filters(df, user_db_port=None):
         df = pd.DataFrame(
             res,
             columns=cols
-            ).applymap(encode_if_necessary)
+        ).applymap(encode_if_necessary)
 
         return df
     except Exception as err:
