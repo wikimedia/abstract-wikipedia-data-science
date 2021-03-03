@@ -28,11 +28,6 @@
                 <template slot="header">Choose wikipedia project languages ▽</template>
                 <template slot="content">
                   <div id="wiki-langs">
-                  <!-- Checkboxes list
-                    <div v-for='elem in projectLanguages' :key="elem">
-                    <input type='checkbox' v-bind:value='elem' v-model='checkedLanguages'
-                         @change='updateCheckallLangs()'> {{ elem }}
-                    </div>-->
                     <div v-for='i in this.rowCount' :key="i">
                       <span v-for="elem in projectLanguages.slice((i-1) * 5, i * 5)" :key='elem'>
                         <input type='checkbox' v-bind:value='elem' v-model='checkedLanguages'
