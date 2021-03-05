@@ -19,7 +19,25 @@ usages and source codes, we expect to distinguish modules, which can be centrali
 
 ## How to use
 
+While working on this project, we had to goals in mind: to help to detect important functions in Wikimedia projects 
+and to help to detect similar ones. This information can be viewed in [our site](https://abstract-wiki-ds.toolforge.org/).
 
+It is hard to determine, which parameters we consider important when working with Lua scripts. 
+That's the reason why the first step in working with the site is to set up weights for different script parameters,
+such as amount of unique editors, amount of transclusions (links for this module on another wikis) and so on.
+This is done through the corresponding fields on the top of the page. Additionally, you can filter results you want 
+to get by using tabs in light blue box: filtering by Wikimedia project family (wiktionary, wikipedia, wikiversity etc.),
+filtering by the language the project uses and excluding modules, which only store data, but don't process it, 
+is available. By default, all Wikimedia projects and all languages are chosen and filtering for "data modules" is off.
+
+Clicking "request" sends the request to the server, which returns top 50 functions, corresponding to set filters 
+and features weights. The titles of these functions are clickable links, which lead to the corresponding pages 
+for viewing information on the single script. This page in its header contains module's title, name of the wiki, 
+where it was fetched from, and page ID in this wiki; grey box shows the source code of this module, 
+and on the right links to the functions, which are considered to be similar to current script, are displayed. 
+
+This way the website allows working with both functions "importance" through setting up weights of scripts' parameters
+and shows scripts, which were detected as similar, through "similar entries" block on script's page.  
 
 ## How to re-create
 
