@@ -6,6 +6,9 @@ Visit [this link](https://abstract-wiki-ds.toolforge.org/) to access the results
 
 This project is Outreachy 21 task, more info can be found in [phabricator](https://phabricator.wikimedia.org/T263678).
 
+## Overview
+Across various wiki projects (Wikipedia, Wikibooks, Wiktionary, etc) and across languages are numerous Lua functions, we call wikifunctions or modules, performing operations that reflect in templates or wiki pages. With the goal towards Abstract Wikipedia - a language-independent Wikipedia that generates wiki pages and articles of different languages from a pool of knowledge - it is now necessary to pool the community authored functions as well. This project gives users and contributors a place to analyze and start merging wikifunctions starting with *important* modules and then merging or refactoring *similar* modules.
+
 ## Description
 
 This project aims to find important Scibunto modules with similar functions on different Wikimedia's wikis.
@@ -19,24 +22,26 @@ usages and source codes, we expect to distinguish modules, which can be centrali
 
 ## How to use
 
-While working on this project, we had to goals in mind: to help to detect important functions in Wikimedia projects 
-and to help to detect similar ones. This information can be viewed in [our site](https://abstract-wiki-ds.toolforge.org/).
+While working on this project, we had two goals in mind: to help detect important functions in Wikimedia projects 
+and also detect similar ones. This information can be viewed in [our site](https://abstract-wiki-ds.toolforge.org/).
 
 It is hard to determine, which parameters we consider important when working with Lua scripts. 
-That's the reason why the first step in working with the site is to set up weights for different script parameters,
-such as amount of unique editors, amount of transclusions (links for this module on another wikis) and so on.
-This is done through the corresponding fields on the top of the page. Additionally, you can filter results you want 
+That's the reason why the first step in working with the site is to set up weights for different parameters,
+such as number of unique editors, number of edits, number of pages a module is transcluded in, and so on.
+This is done through the corresponding fields on the top of the page. The weights can be any values, just give higher values for features that you want more focus in. They are normalised anyways.
+
+Additionally, you can filter results you want 
 to get by using tabs in light blue box: filtering by Wikimedia project family (wiktionary, wikipedia, wikiversity etc.),
 filtering by the language the project uses and excluding modules, which only store data, but don't process it, 
 is available. By default, all Wikimedia projects and all languages are chosen and filtering for "data modules" is off.
 
 Clicking "request" sends the request to the server, which returns top 50 functions, corresponding to set filters 
 and features weights. The titles of these functions are clickable links, which lead to the corresponding pages 
-for viewing information on the single script. This page in its header contains module's title, name of the wiki, 
+for viewing information of the those modules. This page in its header contains module's title, name of the wiki, 
 where it was fetched from, and page ID in this wiki; grey box shows the source code of this module, 
-and on the right links to the functions, which are considered to be similar to current script, are displayed. 
+and on the right links to the functions, which are considered to be similar to current module, are displayed. 
 
-This way the website allows working with both functions "importance" through setting up weights of scripts' parameters
+This way the website allows working with both functions "importance" through setting up weights 
 and shows scripts, which were detected as similar, through "similar entries" block on script's page.  
 
 ## How to re-create
