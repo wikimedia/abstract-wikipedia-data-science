@@ -1,0 +1,5 @@
+user_credits:
+    user: user
+    password: password
+
+database_name: user__data

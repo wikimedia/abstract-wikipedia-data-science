@@ -8,3 +8,4 @@ gensim
 Flask
 Flask-CORS
 requests
+PyYAML

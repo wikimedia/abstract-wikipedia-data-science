@@ -4,7 +4,7 @@
       <tr>
         <td>
           <div class="sidebar">
-            <badger-accordion :icons="true">
+            <badger-accordion>
               <badger-accordion-item>
                 <template slot="header">Choose wikipedia project families ▽</template>
                 <template slot="content">
@@ -19,6 +19,26 @@
                        v-model='projectFamiliesCheckAll' :disabled="projectFamiliesCheckAll == 1"> Check All
                     <input type='checkbox' @click='uncheckAllProjects()'
                        v-model='projectFamiliesUncheckAll' :disabled="projectFamiliesUncheckAll == 1"> Uncheck All
+                    <br />
+                  </div>
+                </template>
+              </badger-accordion-item>
+
+              <badger-accordion-item>
+                <template slot="header">Choose wikipedia project languages ▽</template>
+                <template slot="content">
+                  <div id="wiki-langs">
+                    <div v-for='i in this.rowCount' :key="i">
+                      <span v-for="elem in projectLanguages.slice((i-1) * 5, i * 5)" :key='elem'>
+                        <input type='checkbox' v-bind:value='elem' v-model='checkedLanguages'
+                         @change='updateCheckallLangs()'> {{ elem }}
+                      </span>
+                    </div>
+                  <!-- Check All -->
+                    <input type='checkbox' @click='checkAllLangs()'
+                       v-model='projectLangsCheckAll' :disabled="projectLangsCheckAll == 1"> Check All
+                    <input type='checkbox' @click='uncheckAllLangs()'
+                       v-model='projectLangsUncheckAll' :disabled="projectLangsUncheckAll == 1"> Uncheck All
                     <br />
                   </div>
                 </template>
@@ -50,12 +70,16 @@
 
 
     <div class="form-control">
-      <button class="button_submit" v-on:click="getFunctions">Request</button>
+      <button class="button_submit" v-on:click="getFunctions">
+        {{ requestButton }}</button>
     </div>
 
-    <ol>
-      <li v-for="(elem, index) in entries" :key="index"> {{ elem.dbname }} - {{ elem.title }}</li>
-    </ol>
+    <div class="return_results"><ol>
+      <li v-for="(elem, index) in entries" :key="index">
+        <a :href="`/script/${elem.dbname}/${elem.pageid}/`">
+              {{ elem.dbname }} - {{ elem.title }}</a>
+      </li>
+    </ol></div>
   </body>
 </template>
 
@@ -63,9 +87,18 @@
   import {BadgerAccordion, BadgerAccordionItem} from "vue-badger-accordion";
   import axios from "axios";
   import qs from "qs";
+  import families from '../../public/family.json'
+  import languages from '../../public/lang.json'
   export default {
+    computed: {
+      rowCount() {
+        return Math.ceil(this.projectLanguages.length / 5);
+      }
+    },
     data(){
       return {
+        requestButton: "Request",
+
         features: [
           ["edits_per_editor_score", "Edits per editor score", 1],
           ["edits_per_day_score", "Edits per day score", 1],
@@ -78,17 +111,13 @@
         ],
         projectFamiliesCheckAll: false,
         projectFamiliesUncheckAll: true,
-        projectFamilies: [
-          "Wikipedia",
-          "Wiktionary",
-          "Wikibooks",
-          "Wikiquote",
-          "Wikimedia",
-          "Wikinews",
-          "Wikiversity",
-          "Wikisource"
-        ],
+        projectLangsCheckAll: false,
+        projectLangsUncheckAll: true,
+        projectFamilies: families,
+        projectLanguages: languages,
+
         checkedProjectFamilies: [],
+        checkedLanguages: [],
         noDataModules: false,
 
         entries:[]
@@ -96,7 +125,8 @@
     },
     mounted: function () {
       this.$nextTick(function () {
-        this.checkAllProjects()
+        this.checkAllProjects();
+        this.checkAllLangs();
       })
     },
     components: {
@@ -105,23 +135,34 @@
     },
     methods: {
       getFunctions() {
+        const weights = []
+        this.features.forEach(([_0, _1, value]) =>
+            weights.push(value))
+
+        this.requestButton = "Loading..."
+        let langs = this.checkedLanguages;
+        if (this.checkedLanguages.length == this.projectLanguages.length){
+          langs = ['all']
+        }
         axios.get('/api/data', {
           params: {
-            chosenFamilies: this.checkedProjectFamilies,
-            noData: this.noDataModules
+            fams: this.checkedProjectFamilies,
+            langs: langs,
+            noData: this.noDataModules,
+            weights: weights,
           },
           paramsSerializer: params => {
             return qs.stringify(params, { arrayFormat: 'brackets' })
           },
         })
           .then(resp => {
-            alert('Request sent ' + resp.status);
-            console.log(resp.data.data);
-            this.entries = resp.data.data;
+            this.entries = JSON.parse(resp.data.data);
+            this.requestButton = "Request"
 
           })
           .catch(err => {
             alert('Request failed:'+ err);
+            this.requestButton = "Request"
           });
       },
       checkAllProjects: function () {
@@ -153,6 +194,36 @@
           this.projectFamiliesUncheckAll = false;
         }
       },
+
+      checkAllLangs: function () {
+        this.projectLangsCheckAll = !this.projectLangsCheckAll;
+        this.checkedLanguages = []; // Check all
+        for (let key in this.projectLanguages) {
+          this.checkedLanguages.push(this.projectLanguages[key ]);
+        }
+        if (this.projectLangsUncheckAll === true) {
+          this.projectLangsUncheckAll = !this.projectLangsUncheckAll;
+        }
+      },
+      uncheckAllLangs: function () {
+        this.projectLangsUncheckAll = !this.projectLangsUncheckAll;
+        this.checkedLanguages = [];
+        if (this.projectLangsCheckAll === true) {
+          this.projectLangsCheckAll = !this.projectLangsCheckAll;
+        }
+      },
+      updateCheckallLangs: function () {
+        if (this.projectLanguages.length == this.checkedLanguages.length) {
+          this.projectLangsCheckAll = true;
+        } else {
+          this.projectLangsCheckAll = false;
+        }
+        if (this.checkedLanguages.length == 0) {
+          this.projectLangsUncheckAll = true;
+        } else {
+          this.projectLangsUncheckAll = false;
+        }
+      },
     }
   }
 </script>
@@ -169,11 +240,15 @@
     background-color: lightcyan;
     min-height: 100%;
   }
-  div#wiki-families, div#data-modules {
+  div#wiki-families, div#wiki-langs, div#data-modules {
     text-align: left;
   }
   .badger-accordion__header .js-badger-accordion-header .badger-accordion-toggle {
     font-family: Avenir, Helvetica, Arial, sans-serif;
     font-size: large !important;
+  }
+  .return_results {
+    text-align: left;
+    padding: 30px;
   }
 </style>
