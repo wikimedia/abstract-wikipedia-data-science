@@ -6,6 +6,18 @@ Visit [this link](https://abstract-wiki-ds.toolforge.org/) to access the results
 
 This project is Outreachy 21 task, more info can be found in [phabricator](https://phabricator.wikimedia.org/T263678).
 
+## Documentation
+
+- [Overview](#overview)
+- [Description](#description)
+- [How to use](#how-to-use)
+- [How to re-create](#how-to-re-create)
+   + [Step by step algorithm](#step-by-step-algorithm)
+   + [Function of python files](#function-of-python-files)
+   + [How to use code remotely](#how-to-use-code-remotely)
+   + [How to schedule the scripts](#how-to-schedule-the-scripts)
+-  [Further improvements](#further-improvements)
+
 ## Overview
 Across various wiki projects (Wikipedia, Wikibooks, Wiktionary, etc) and across languages are numerous Lua functions, we call wikifunctions or modules, performing operations that reflect in templates or wiki pages. With the goal towards Abstract Wikipedia - a language-independent Wikipedia that generates wiki pages and articles of different languages from a pool of knowledge - it is now necessary to pool the community authored functions as well. This project gives users and contributors a place to analyze and start merging wikifunctions starting with *important* modules and then merging or refactoring *similar* modules.
 
@@ -45,6 +57,8 @@ This way the website allows working with both functions "importance" through set
 and shows scripts, which were detected as similar, through "similar entries" block on script's page.  
 
 ## How to re-create
+
+### Step by step algorithm
 
 _1. Create Wikimedia developer account and create a new tool in Toolforge._
 
@@ -222,3 +236,14 @@ Use `crontab -e` and add to the end something like
 This example will run every day at the midnight - more detailed explanation is available after running `crontab -e`.
 
 A list of all jobs set up for cron can be found in [cronjobs.txt](cronjobs.txt).
+
+## Further improvements
+
+- Improve clustering: Test code2vec or other similar code-based methods to create embeddings.
+- Add pageviews as a feature (Find a way to use page dumps. APIs were tested but take too long).
+- Provide *diffs* among similar modules (shows users parts of code to modularize or merge).
+- Create a new workaround for ssh tunneling for acessible local development.
+- Add proper description and a few examples of interestiong weight combinations onto the website.
+- Add to the website sortable list of all functions, accessible without working with weights.
+- Add pagination in list of omportant modules on the website.
+- Add to the website a possibility to look not only at the modules in the same cluster, but also show ones in close clusters.
