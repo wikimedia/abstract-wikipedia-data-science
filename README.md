@@ -245,5 +245,5 @@ A list of all jobs set up for cron can be found in [cronjobs.txt](cronjobs.txt).
 - Create a new workaround for ssh tunneling for acessible local development.
 - Add proper description and a few examples of interestiong weight combinations onto the website.
 - Add to the website sortable list of all functions, accessible without working with weights.
-- Add pagination in list of omportant modules on the website.
+- Add pagination in list of important modules on the website.
 - Add to the website a possibility to look not only at the modules in the same cluster, but also show ones in close clusters.
