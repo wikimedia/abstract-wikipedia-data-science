@@ -4,7 +4,7 @@ Repository for fetching and analyzing community functions across all wiki projec
 
 Visit [this link](https://abstract-wiki-ds.toolforge.org/) to access the results!
 
-This project is Outreachy 21 task, more info can be found in [phabricator](https://phabricator.wikimedia.org/T263678).
+This project is Outreachy 21 task, more info can be found in [phabricator](https://phabricator.wikimedia.org/T263678) and our wiki page [meta:Abstract_Wikipedia/Data](https://meta.wikimedia.org/wiki/Abstract_Wikipedia/Data).
 
 ## Documentation
 
